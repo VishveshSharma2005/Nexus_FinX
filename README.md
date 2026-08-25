@@ -33,3 +33,49 @@ FinX is a RAG-based assistant that reads a borrower's own loan agreement, sancti
 | Refuses instead of hallucinating | — | ✓ |
 
 ## Architecture
+
+```text
+Documents → Parse → Chunk → Tag → Index
+
+↓
+
+Question → Retrieve → Filter (applicability) → Enough evidence?
+
+├─ yes → Risk & Cost Engine → Explain → Cited Answer
+
+└─ no  → General info (no RBI/document claims) → Human advisor
+````
+
+* **Retrieval layer** — hybrid (semantic + keyword) search over a clause-aware, versioned index
+* **Decision layer** — all financial calculations (fees, true cost, EMI, KFS diff) run in deterministic Python; the LLM never computes a number or asserts a regulation applies
+* **Parser and model choice** sit behind interfaces (`DocumentParser`, `LLMProvider`), so the hackathon build can be swapped for production-grade components without touching the RAG logic
+
+## Tech Stack
+
+Next.js · FastAPI · PostgreSQL + pgvector · PyMuPDF + OCR · Nemotron 3.5 Lightning (behind a provider interface)
+
+## Status
+
+**Current Phase: Parser + Retrieval + Initial RAG Pipeline**
+
+The core document ingestion and retrieval pipeline is currently under development, with the initial focus on parsing loan documents into structured clauses and building the clause-aware retrieval layer. Cited chat, deterministic risk and cost analysis, KFS auditing, loan comparison, and voice capabilities will be implemented incrementally in the next phases.
+
+## Build Plan
+
+1. **Parser** → structured clauses
+2. **Retrieval** → clause-aware index, hybrid search
+3. **Cited chat** → answers over one agreement, every claim sourced
+4. **Risk & ₹** → rules engine, fee normaliser, true cost
+5. **KFS & compare** → document diff, two-offer comparison
+6. **Voice & evaluation** → speech in/out, refusal audit
+
+## Team
+
+Vishvesh · Marhama
+
+---
+
+*This project provides source-backed decision support, not regulated financial or legal advice.*
+
+```
+```
