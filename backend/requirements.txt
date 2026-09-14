@@ -1,0 +1,26 @@
+# --- API ---------------------------------------------------------------------
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+sse-starlette==2.2.1
+pydantic==2.10.5
+pydantic-settings==2.7.1
+
+# --- Parsing -----------------------------------------------------------------
+pymupdf==1.25.2
+pytesseract==0.3.13
+pillow==11.1.0
+
+# --- Storage / retrieval -----------------------------------------------------
+sqlalchemy==2.0.37
+psycopg[binary]==3.2.4
+pgvector==0.3.6
+numpy==2.2.2
+
+# --- HTTP (provider clients, corpus fetch) -----------------------------------
+httpx==0.28.1
+
+# --- Dev / test --------------------------------------------------------------
+pytest==8.3.4
+pytest-asyncio==0.25.2
+ruff==0.9.2

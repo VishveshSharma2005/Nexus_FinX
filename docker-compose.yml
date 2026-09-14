@@ -1,0 +1,60 @@
+# One command to run the whole stack: `docker compose up --build`
+#
+# Note: the API also runs without Docker. FINX_INDEX=local swaps the pgvector
+# index for a SQLite+numpy implementation behind the same VectorIndex
+# interface, so a live demo never depends on a Docker daemon being present.
+
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: finx
+      POSTGRES_PASSWORD: finx
+      POSTGRES_DB: finx
+    ports:
+      - "5432:5432"
+    volumes:
+      - finx_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U finx -d finx"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      FINX_INDEX: pgvector
+      FINX_DATABASE_URL: postgresql+psycopg://finx:finx@db:5432/finx
+      FINX_LLM_PROVIDER: ${FINX_LLM_PROVIDER:-fake}
+      FINX_LLM_MODEL: ${FINX_LLM_MODEL:-nvidia/llama-3.3-nemotron-super-49b-v1.5}
+      FINX_LLM_BASE_URL: ${FINX_LLM_BASE_URL:-https://integrate.api.nvidia.com/v1}
+      FINX_EMBEDDING_PROVIDER: ${FINX_EMBEDDING_PROVIDER:-fake}
+      NVIDIA_API_KEY: ${NVIDIA_API_KEY:-}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./corpus:/corpus:ro
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    environment:
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  finx_pgdata:
