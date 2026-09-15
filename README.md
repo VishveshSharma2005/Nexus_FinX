@@ -1,5 +1,7 @@
 # FinX — Loan Agreement Intelligence
 
+**From 40 pages of fine print to one evidence-backed decision.**
+
 Millions of people sign loan agreements they cannot read. FinX reads a borrower's
 own loan documents, explains them in plain language, checks every clause against a
 versioned RBI corpus, and shows the source behind every sentence it produces.

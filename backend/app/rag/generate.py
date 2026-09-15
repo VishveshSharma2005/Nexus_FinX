@@ -36,8 +36,9 @@ Rules you must follow exactly:
 - Distinguish what the borrower's agreement says from what RBI requires. The
   agreement is what they signed; the circular is what the lender was permitted
   to write.
-- Plain language. Short sentences. No legal jargon unless you immediately
-  explain it.
+- Answer in 5 to 6 short sentences: what the agreement says, what it costs or
+  means for the borrower, and what RBI requires where a passage covers it.
+- Plain language. No legal jargon unless you immediately explain it.
 - Do not give advice on what the borrower should do. Explain what the documents
   say."""
 

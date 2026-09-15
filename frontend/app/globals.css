@@ -287,3 +287,23 @@ details.warnings ul {
   margin: 0 0 12px;
   font-size: 13px;
 }
+
+/* The question box: fills the row instead of shrinking to its placeholder. */
+form.row {
+  flex-wrap: nowrap;
+}
+.ask-input {
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  padding: 11px 14px;
+  font-size: 15px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+}
+.ask-input:focus {
+  outline: 2px solid #a07c33;
+  outline-offset: 1px;
+}

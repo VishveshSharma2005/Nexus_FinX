@@ -93,29 +93,34 @@ export default function Home() {
           previous.map((turn, i) => (i === index ? { ...turn, ...patch } : turn)),
         );
 
-      await askQuestion(text, document.document_id, document.version, {
-        onMeta: (meta) => update({ meta }),
-        onCitations: (citations) => update({ citations }),
-        onDelta: (delta) =>
-          setTurns((previous) =>
-            previous.map((turn, i) =>
-              i === index ? { ...turn, answer: turn.answer + delta } : turn,
+      try {
+        await askQuestion(text, document.document_id, document.version, {
+          onMeta: (meta) => update({ meta }),
+          onCitations: (citations) => update({ citations }),
+          onDelta: (delta) =>
+            setTurns((previous) =>
+              previous.map((turn, i) =>
+                i === index ? { ...turn, answer: turn.answer + delta } : turn,
+              ),
             ),
-          ),
-        // The hosted model failed: its partial draft is void, and the
-        // fallback's answer streams into a cleared box under a notice.
-        onFallback: (fallback) => update({ fallback, streaming: false }),
-        onCoverage: (coverage) => update({ coverage }),
-        onDegraded: ({ message }) => update({ degraded: message, answer: "" }),
-        // Verification can only remove sentences, so the checked answer always
-        // replaces the draft rather than adding to it.
-        onVerified: ({ text: verified, stripped }) =>
-          update({ answer: verified, stripped }),
-        onError: (message) => update({ error: message, streaming: false }),
-        onDone: () => update({ streaming: false }),
-      });
-
-      setBusy(false);
+          // The hosted model failed: its partial draft is void, and the
+          // fallback's answer streams into a cleared box under a notice.
+          onFallback: (fallback) => update({ fallback, streaming: false }),
+          onCoverage: (coverage) => update({ coverage }),
+          onDegraded: ({ message }) => update({ degraded: message, answer: "" }),
+          // Verification can only remove sentences, so the checked answer always
+          // replaces the draft rather than adding to it.
+          onVerified: ({ text: verified, stripped }) =>
+            update({ answer: verified, stripped }),
+          onError: (message) => update({ error: message, streaming: false }),
+          onDone: () => update({ streaming: false }),
+        });
+      } catch (error) {
+        // A thrown request (API down, network drop) must not leave the button stuck.
+        update({ error: error instanceof Error ? error.message : String(error), streaming: false });
+      } finally {
+        setBusy(false);
+      }
     },
     [busy, document, turns.length],
   );
@@ -195,6 +200,8 @@ export default function Home() {
             className="row"
           >
             <input
+              type="text"
+              className="ask-input"
               value={question}
               onChange={(e) => setQuestion(e.target.value)}
               placeholder="Ask about a charge, a clause, or a term…"
