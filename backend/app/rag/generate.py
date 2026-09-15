@@ -13,6 +13,7 @@ cites afterwards and removes what does not hold up.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
@@ -102,10 +103,16 @@ async def generate(
     messages = build_messages(question, passages, summary=summary)
     response = await provider.complete(messages)
     return GeneratedAnswer(
-        answer=verify(response.text, passages),
+        answer=verify(response.text, passages, question=question),
         passages=passages,
         prompt_passage_count=len(passages),
     )
+
+
+# How long to wait for a hosted model's first token before giving up on it.
+# Long enough for a cold start on a healthy endpoint; short enough that a
+# borrower watching the screen is not left staring at nothing.
+FIRST_TOKEN_TIMEOUT_SECONDS = 15.0
 
 
 async def generate_stream(
@@ -114,6 +121,8 @@ async def generate_stream(
     *,
     provider: LLMProvider,
     summary: str = "",
+    fallback: LLMProvider | None = None,
+    first_token_timeout: float = FIRST_TOKEN_TIMEOUT_SECONDS,
 ) -> AsyncIterator[tuple[str, str]]:
     """Stream an answer, then verify it.
 
@@ -124,14 +133,47 @@ async def generate_stream(
     watching a blank box for eight seconds is a worse experience than watching
     text appear. The final event replaces it: verification can only remove
     sentences, never add them, so the verified answer is always a subset of
-    what was shown. The client swaps the text when it arrives, and the
-    difference is reported rather than hidden.
+    what was shown.
+
+    If the provider fails -- a rejected key, a timeout, an outage, or simply no
+    first token within ``first_token_timeout`` -- and a ``fallback`` is given,
+    this yields ``("degraded", reason)`` and finishes the answer with the
+    fallback instead. Anything the failed provider had already streamed is
+    discarded: the client clears its draft on ``degraded``, and verification
+    runs only on what the fallback wrote. A demo therefore degrades to a plainer
+    answer with a visible explanation, never to a spinner or a stack trace.
     """
     messages = build_messages(question, passages, summary=summary)
-
     draft: list[str] = []
-    async for delta in provider.stream(messages):
-        draft.append(delta)
-        yield "delta", delta
 
-    yield "verified", verify("".join(draft), passages).text
+    try:
+        stream = provider.stream(messages).__aiter__()
+        first = await asyncio.wait_for(stream.__anext__(), timeout=first_token_timeout)
+        draft.append(first)
+        yield "delta", first
+        async for delta in stream:
+            draft.append(delta)
+            yield "delta", delta
+    except StopAsyncIteration:
+        pass
+    except Exception as exc:
+        if fallback is None:
+            raise
+        reason = _reason(exc, first_token_timeout)
+        logger.warning(
+            "Provider %s failed (%s); falling back to %s", provider.name, reason, fallback.name
+        )
+        yield "degraded", reason
+        draft = []
+        async for delta in fallback.stream(messages):
+            draft.append(delta)
+            yield "delta", delta
+
+    yield "verified", verify("".join(draft), passages, question=question).text
+
+
+def _reason(exc: Exception, timeout: float) -> str:
+    if isinstance(exc, TimeoutError | asyncio.TimeoutError):
+        return f"the language model did not start answering within {timeout:.0f} seconds"
+    message = str(exc)
+    return message if message else f"the language model failed ({type(exc).__name__})"

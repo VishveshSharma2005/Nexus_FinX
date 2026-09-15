@@ -56,11 +56,15 @@ class Settings(BaseSettings):
 
     # --- LLM ----------------------------------------------------------------
     llm_provider: LLMProviderName = LLMProviderName.EXTRACTIVE
-    llm_model: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
+    # nvidia/llama-3.3-nemotron-super-49b-v1.5 reached end of life on
+    # 2026-08-26 and now returns 410 Gone; this is its direct successor.
+    llm_model: str = "nvidia/nemotron-3-super-120b-a12b"
     llm_base_url: str = "https://integrate.api.nvidia.com/v1"
     llm_temperature: float = 0.2
     llm_max_tokens: int = 1024
     llm_timeout_seconds: float = 60.0
+    llm_first_token_timeout: float = 20.0
+    """Seconds to wait for a hosted model's first token before falling back."""
     nvidia_api_key: str = Field(default="", alias="NVIDIA_API_KEY")
 
     # --- Embeddings ---------------------------------------------------------

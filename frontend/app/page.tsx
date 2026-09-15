@@ -34,6 +34,7 @@ type Turn = {
   citations: Citation[];
   meta: ChatMeta | null;
   stripped: string[];
+  degraded: string | null;
   streaming: boolean;
   error: string | null;
 };
@@ -75,6 +76,7 @@ export default function Home() {
           citations: [],
           meta: null,
           stripped: [],
+          degraded: null,
           streaming: true,
           error: null,
         },
@@ -94,6 +96,9 @@ export default function Home() {
               i === index ? { ...turn, answer: turn.answer + delta } : turn,
             ),
           ),
+        // The hosted model failed: its partial draft is void, and the
+        // fallback's answer streams into a cleared box under a notice.
+        onDegraded: ({ message }) => update({ degraded: message, answer: "" }),
         // Verification can only remove sentences, so the checked answer always
         // replaces the draft rather than adding to it.
         onVerified: ({ text: verified, stripped }) =>
@@ -233,6 +238,7 @@ export default function Home() {
           ) : (
             <div className="answer-grid">
               <div className="answer">
+                {turn.degraded && <p className="note">{turn.degraded}</p>}
                 {turn.answer || (turn.streaming ? "…" : "")}
                 {turn.stripped.length > 0 && (
                   <p className="note">

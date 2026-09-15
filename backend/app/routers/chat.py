@@ -27,6 +27,7 @@ from app.config import Settings, get_settings
 from app.core.corpus import load_manifest
 from app.core.deps import get_embedding_provider, get_llm_provider, get_vector_index
 from app.db.documents import DocumentStore
+from app.providers.llm import ExtractiveProvider
 from app.rag.generate import generate_stream
 from app.rag.retrieve import build_topic_index, retrieve_for_answer
 from app.rag.verify import verify
@@ -145,19 +146,38 @@ async def chat(
             ]
             yield _sse("citations", citations)
 
+            # The quoting provider is the safety net: if the hosted model is
+            # rejected, slow or down, the answer still arrives, visibly marked.
+            fallback = None if provider.name == ExtractiveProvider.name else ExtractiveProvider()
+
             draft: list[str] = []
             async for kind, payload in generate_stream(
                 request.question,
                 retrieval.passages,
                 provider=provider,
                 summary=document.summary,
+                fallback=fallback,
+                first_token_timeout=settings.llm_first_token_timeout,
             ):
                 if kind == "delta":
                     draft.append(payload)
                     yield _sse("delta", {"text": payload})
                     await asyncio.sleep(0)  # let the event reach the browser
+                elif kind == "degraded":
+                    draft = []
+                    yield _sse(
+                        "degraded",
+                        {
+                            "reason": payload,
+                            "provider": ExtractiveProvider.name,
+                            "message": (
+                                f"The language model was unavailable: {payload}. This answer "
+                                "was assembled directly from the quoted clauses instead."
+                            ),
+                        },
+                    )
                 else:
-                    checked = verify("".join(draft), retrieval.passages)
+                    checked = verify("".join(draft), retrieval.passages, question=request.question)
                     yield _sse(
                         "verified",
                         {

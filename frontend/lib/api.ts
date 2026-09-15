@@ -73,6 +73,8 @@ export type ChatHandlers = {
   onMeta?: (meta: ChatMeta) => void;
   onCitations?: (citations: Citation[]) => void;
   onDelta?: (text: string) => void;
+  /** The hosted model failed; the draft so far is void and a fallback is answering. */
+  onDegraded?: (payload: { reason: string; provider: string; message: string }) => void;
   onVerified?: (payload: {
     text: string;
     stripped: string[];
@@ -154,6 +156,11 @@ export async function askQuestion(
           break;
         case "delta":
           handlers.onDelta?.((payload as { text: string }).text);
+          break;
+        case "degraded":
+          handlers.onDegraded?.(
+            payload as { reason: string; provider: string; message: string },
+          );
           break;
         case "verified":
           handlers.onVerified?.(

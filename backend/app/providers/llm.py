@@ -114,12 +114,68 @@ class ExtractiveProvider:
         return "\n".join(lines)
 
 
+class ProviderUnavailable(RuntimeError):
+    """A hosted model could not produce an answer, with a reason a person can read.
+
+    Raised instead of letting an HTTP or network exception escape, so the chat
+    layer can say *why* it fell back -- "the API key was rejected" is a very
+    different demo-day problem from "NVIDIA did not respond in 15 seconds".
+    """
+
+
+def _describe(exc: Exception) -> str:
+    import httpx
+
+    if isinstance(exc, httpx.HTTPStatusError):
+        code = exc.response.status_code
+        if code in (401, 403):
+            return "the NVIDIA API key was rejected"
+        if code == 404:
+            return "the configured model was not found on the NVIDIA endpoint"
+        if code == 410:
+            return "NVIDIA has retired the configured model; set FINX_LLM_MODEL to a current one"
+        if code == 429:
+            return "the NVIDIA endpoint is rate-limiting requests"
+        if code >= 500:
+            return f"the NVIDIA service returned an error ({code})"
+        return f"the NVIDIA endpoint refused the request ({code})"
+    if isinstance(exc, httpx.TimeoutException):
+        return "the NVIDIA endpoint did not respond in time"
+    if isinstance(exc, httpx.ConnectError):
+        return "the NVIDIA endpoint could not be reached"
+    return f"the language model failed ({type(exc).__name__})"
+
+
+def _ssl_context():
+    """Verify against the OS trust store rather than a bundled CA list.
+
+    On a machine behind a TLS-inspecting proxy the bundled list does not trust
+    the intercepting root, so every call fails with a certificate error that
+    looks exactly like the API being down. This machine is such a machine: pip
+    and the embedding download needed the same fix. Verification stays on.
+    """
+    import ssl
+
+    try:
+        import truststore
+
+        return truststore.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    except ImportError:  # pragma: no cover - truststore is a pinned dependency
+        return True
+
+
+# Nemotron's v1.5 reasoning models think out loud unless told not to, and the
+# thinking arrives in the same stream as the answer.
+_NO_THINK = "/no_think"
+_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.S)
+
+
 class NemotronProvider:
     """NVIDIA NIM, over the OpenAI-compatible chat completions endpoint."""
 
     name = "nemotron"
-    # Nemotron's instruction models are English-first. Phase 9 routes Hindi and
-    # Gujarati elsewhere rather than assuming this one copes.
+    # Nemotron's instruction models are English-first. Hindi and Gujarati are
+    # out of scope rather than routed here on the assumption that it copes.
     supported_languages = frozenset({"en"})
 
     def __init__(
@@ -145,13 +201,21 @@ class NemotronProvider:
         self._timeout = timeout
 
     def _payload(self, messages, temperature, max_tokens, stream):
+        wire = [{"role": m.role, "content": m.content} for m in messages]
+        if wire and wire[0]["role"] == "system":
+            wire[0] = {"role": "system", "content": _NO_THINK + "\n" + wire[0]["content"]}
         return {
             "model": self.model,
-            "messages": [{"role": m.role, "content": m.content} for m in messages],
+            "messages": wire,
             "temperature": self._temperature if temperature is None else temperature,
             "max_tokens": self._max_tokens if max_tokens is None else max_tokens,
             "stream": stream,
         }
+
+    def _client(self):
+        import httpx
+
+        return httpx.AsyncClient(timeout=self._timeout, verify=_ssl_context())
 
     async def complete(
         self,
@@ -160,21 +224,22 @@ class NemotronProvider:
         temperature: float | None = None,
         max_tokens: int | None = None,
     ) -> LLMResponse:
-        import httpx
-
-        async with httpx.AsyncClient(timeout=self._timeout) as client:
-            response = await client.post(
-                f"{self._base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                json=self._payload(messages, temperature, max_tokens, stream=False),
-            )
-            response.raise_for_status()
-            body = response.json()
+        try:
+            async with self._client() as client:
+                response = await client.post(
+                    f"{self._base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self._api_key}"},
+                    json=self._payload(messages, temperature, max_tokens, stream=False),
+                )
+                response.raise_for_status()
+                body = response.json()
+        except Exception as exc:
+            raise ProviderUnavailable(_describe(exc)) from exc
 
         choice = body["choices"][0]
         usage = body.get("usage") or {}
         return LLMResponse(
-            text=choice["message"]["content"],
+            text=_THINK_BLOCK.sub("", choice["message"]["content"] or "").strip(),
             model=body.get("model", self.model),
             usage=LLMUsage(
                 prompt_tokens=usage.get("prompt_tokens", 0),
@@ -192,30 +257,46 @@ class NemotronProvider:
     ) -> AsyncIterator[str]:
         import json
 
-        import httpx
-
-        async with (
-            httpx.AsyncClient(timeout=self._timeout) as client,
-            client.stream(
-                "POST",
-                f"{self._base_url}/chat/completions",
-                headers={"Authorization": f"Bearer {self._api_key}"},
-                json=self._payload(messages, temperature, max_tokens, stream=True),
-            ) as response,
-        ):
-            response.raise_for_status()
-            async for line in response.aiter_lines():
-                if not line.startswith("data: "):
-                    continue
-                data = line[6:].strip()
-                if data == "[DONE]":
-                    return
-                try:
-                    delta = json.loads(data)["choices"][0]["delta"]
-                except (KeyError, IndexError, json.JSONDecodeError):
-                    continue
-                if content := delta.get("content"):
-                    yield content
+        thinking = False
+        try:
+            async with (
+                self._client() as client,
+                client.stream(
+                    "POST",
+                    f"{self._base_url}/chat/completions",
+                    headers={"Authorization": f"Bearer {self._api_key}"},
+                    json=self._payload(messages, temperature, max_tokens, stream=True),
+                ) as response,
+            ):
+                if response.status_code >= 400:
+                    await response.aread()
+                    response.raise_for_status()
+                async for line in response.aiter_lines():
+                    if not line.startswith("data: "):
+                        continue
+                    data = line[6:].strip()
+                    if data == "[DONE]":
+                        return
+                    try:
+                        delta = json.loads(data)["choices"][0]["delta"]
+                    except (KeyError, IndexError, json.JSONDecodeError):
+                        continue
+                    content = delta.get("content") or ""
+                    # Drop any reasoning the model emits despite /no_think.
+                    if "<think>" in content:
+                        thinking = True
+                        content = content.split("<think>", 1)[0]
+                    if thinking:
+                        if "</think>" not in content:
+                            continue
+                        thinking = False
+                        content = content.split("</think>", 1)[1]
+                    if content:
+                        yield content
+        except ProviderUnavailable:
+            raise
+        except Exception as exc:
+            raise ProviderUnavailable(_describe(exc)) from exc
 
 
 # --- Helpers shared by the extractive provider ------------------------------
