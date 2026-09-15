@@ -182,7 +182,15 @@ class ParseSource(BaseModel):
 
     content: bytes
     filename: str
-    media_type: str = "application/pdf"
+    media_type: str = "application/octet-stream"
+    """Declared type of the bytes.
+
+    The default is deliberately non-committal. It used to default to
+    ``application/pdf``, which meant any caller that omitted it silently
+    asserted PDF -- and the PDF parser then claimed a Word document and
+    reported it as corrupt. A caller that does not know the type must not
+    accidentally assert one; parsers fall back to the filename instead.
+    """
     document_id: str | None = None
     version: int = Field(default=1, ge=1)
     kind_hint: DocumentKind | None = None

@@ -20,7 +20,12 @@ sys.path.insert(0, str(REPO_ROOT / "backend"))
 
 from app.config import get_settings  # noqa: E402
 from app.core.contracts import ParseSource  # noqa: E402
-from app.core.deps import get_document_parser  # noqa: E402
+from app.core.deps import get_parser_for  # noqa: E402
+
+MEDIA_TYPES = {
+    ".pdf": "application/pdf",
+    ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+}
 
 
 def main() -> int:
@@ -42,19 +47,18 @@ def main() -> int:
         return 2
 
     settings = get_settings()
-    document_parser = get_document_parser(settings)
-
     source = ParseSource(
         content=args.path.read_bytes(),
         filename=args.path.name,
+        media_type=MEDIA_TYPES.get(
+            args.path.suffix.lower(), "application/octet-stream"
+        ),
         version=args.version,
     )
-
-    if not document_parser.supports(source):
-        print(
-            f"Parser {document_parser.name!r} does not support {args.path.name}",
-            file=sys.stderr,
-        )
+    try:
+        document_parser = get_parser_for(source, settings)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
         return 2
 
     parsed = document_parser.parse(source)

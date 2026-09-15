@@ -302,10 +302,8 @@ class LiteParser:
             ),
             lender_class=resolve(hint.lender_class if hint else None, detect.detect_lender_class),
             purpose=hint.purpose if hint else None,
-            agreement_date=(
-                hint.agreement_date
-                if hint and hint.agreement_date
-                else detect.detect_agreement_date(full_text)
+            agreement_date=resolve(
+                hint.agreement_date if hint else None, detect.detect_agreement_date
             ),
             language=hint.language if hint else "en",
             extra=dict(hint.extra) if hint else {},

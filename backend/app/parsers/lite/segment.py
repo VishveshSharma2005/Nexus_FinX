@@ -32,6 +32,14 @@ class Line:
     text: str
     page: int
     is_ocr: bool = False
+    is_heading: bool = False
+    """Set when the source format states outright that this line is a heading.
+
+    Word documents carry heading styles; PDFs do not, and leave this False so
+    that headings are inferred from capitalisation as before. Having the flag
+    means a parser never has to alter text to make the segmenter notice
+    structure -- an earlier version upper-cased styled headings for exactly
+    that reason, which quietly rewrote the document FinX then quoted back."""
 
 
 @dataclass
@@ -86,6 +94,7 @@ class _Block:
     number: str | None
     heading: str | None
     lines: list[Line]
+    explicit_heading: bool = False
 
 
 def _find_starts(lines: list[Line]) -> tuple[list[tuple[int, str | None, str | None]], bool]:
@@ -96,6 +105,13 @@ def _find_starts(lines: list[Line]) -> tuple[list[tuple[int, str | None, str | N
     for i, line in enumerate(lines):
         text = line.text.strip()
         if not text:
+            continue
+
+        if line.is_heading:
+            # The format declared it. No guessing, and no rewriting.
+            match = _NUMBERED.match(text) or _STRUCTURAL.match(text)
+            number = match.group("number") if match else None
+            starts.append((i, number, text))
             continue
 
         match = _NUMBERED.match(text)
@@ -131,7 +147,7 @@ def _blocks_from_starts(
     blocks: list[_Block] = []
     for position, (index, number, heading) in enumerate(starts):
         end = starts[position + 1][0] if position + 1 < len(starts) else len(lines)
-        blocks.append(_Block(index, number, heading, lines[index:end]))
+        blocks.append(_Block(index, number, heading, lines[index:end], lines[index].is_heading))
     return blocks
 
 
@@ -190,7 +206,8 @@ def _promote_bare_headings(blocks: list[_Block]) -> list[_Block]:
         body = " ".join(line.text.strip() for line in block.lines[1:]).strip()
         has_successor = position + 1 < len(blocks)
 
-        if not body and has_successor and _looks_like_a_heading(first_line):
+        is_heading = block.explicit_heading or _looks_like_a_heading(first_line)
+        if not body and has_successor and is_heading:
             pending.append(block.heading or first_line)
             continue
 

@@ -19,7 +19,7 @@ if TYPE_CHECKING:  # pragma: no cover - import-time only for type checkers
 
 
 def get_document_parser(settings: Settings | None = None) -> DocumentParser:
-    """Resolve the configured parser.
+    """Resolve the default parser.
 
     The import is local so that ``app.parsers`` stays out of every other
     module's import graph -- callers receive the interface, never the class.
@@ -28,6 +28,13 @@ def get_document_parser(settings: Settings | None = None) -> DocumentParser:
 
     settings = settings or get_settings()
     return build_parser(DEFAULT_PARSER, settings)
+
+
+def get_parser_for(source, settings: Settings | None = None) -> DocumentParser:
+    """Resolve whichever implementation handles this document's format."""
+    from app.parsers.registry import select_parser
+
+    return select_parser(source, settings or get_settings())
 
 
 def get_llm_provider(settings: Settings | None = None) -> LLMProvider:
