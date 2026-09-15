@@ -4,6 +4,12 @@
 
 Built for the Nexus Hackathon.
 
+<p align="center">
+
+🚀 Live Demo · 💻 GitHub
+
+</p>
+
 ## The problem
 
 Millions of people sign loan agreements they never fully read — lock-ins, prepayment
