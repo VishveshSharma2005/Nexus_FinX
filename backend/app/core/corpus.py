@@ -47,6 +47,22 @@ class RelatedCircular(BaseModel):
     note: str | None = None
 
 
+class Repeal(BaseModel):
+    """Circulars a later instruction replaces, and from when.
+
+    Repeal is dated, not immediate. The 2025 pre-payment Directions repeal eight
+    earlier foreclosure circulars from 2026-01-01 and state that those remain
+    deemed in force for periods before that, so a loan sanctioned earlier is
+    still governed by the older ones.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    effective_from: date
+    circulars: tuple[str, ...] = ()
+    note: str | None = None
+
+
 class CorpusDocument(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -70,6 +86,7 @@ class CorpusDocument(BaseModel):
     """Id of the circular this one modifies."""
     amended_by: str | None = None
     """Id of a later circular that changes this one's terms or dates."""
+    repeals: Repeal | None = None
     notes: str | None = None
     filename_mismatch: FilenameMismatch | None = None
     related: tuple[RelatedCircular, ...] = ()
