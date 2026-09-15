@@ -33,6 +33,20 @@ class FilenameMismatch(BaseModel):
     action_taken: str
 
 
+class RelatedCircular(BaseModel):
+    """A circular referred to by a corpus entry but not itself in the corpus."""
+
+    model_config = ConfigDict(frozen=True)
+
+    title: str
+    rbi_reference: str
+    circular_number: str
+    issued_on: date
+    source_url: str | None = None
+    source_url_verified: bool = False
+    note: str | None = None
+
+
 class CorpusDocument(BaseModel):
     model_config = ConfigDict(frozen=True)
 
@@ -48,8 +62,25 @@ class CorpusDocument(BaseModel):
     applicability: Applicability
     topics: tuple[str, ...] = ()
     source_url: str | None = None
+    source_url_verified: bool = False
+    source_url_status: str | None = None
     notes: str | None = None
     filename_mismatch: FilenameMismatch | None = None
+    related: tuple[RelatedCircular, ...] = ()
+
+    @model_validator(mode="after")
+    def _a_recorded_url_must_have_been_checked(self) -> CorpusDocument:
+        """A citation may only carry a link that was confirmed to resolve.
+
+        One of these was wrong on the first pass: the URL embedded in the
+        floating-rate PDF pointed at the HFC Master Direction it cites, not at
+        itself. A link that is close but wrong is worse than no link.
+        """
+        if self.source_url and not self.source_url_verified:
+            raise ValueError(f"{self.id}: source_url recorded but never verified")
+        if not self.source_url and not self.source_url_status:
+            raise ValueError(f"{self.id}: missing source_url must explain why")
+        return self
 
     @model_validator(mode="after")
     def _effective_dates_are_ordered(self) -> CorpusDocument:

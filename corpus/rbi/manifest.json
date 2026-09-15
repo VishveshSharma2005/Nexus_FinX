@@ -5,7 +5,8 @@
     "issued_on": "Date printed on the circular.",
     "applicability.effective_from": "Date the obligations actually bind a loan. Deliberately distinct from issued_on: several of these circulars were issued months before they took effect, and a loan sanctioned in the gap is not governed by them.",
     "applicability.effective_to": "null means still in force as far as this corpus knows.",
-    "verified_from_pdf": "true means the reference number, date and addressees below were read out of the PDF text, not assumed from the filename."
+    "verified_from_pdf": "true means the reference number, date and addressees below were read out of the PDF text, not assumed from the filename.",
+    "source_url": "Fetched and confirmed to match this PDF's own reference number, circular number and date. source_url_verified records that check; a citation must never link somewhere it was merely assumed to point."
   },
   "documents": [
     {
@@ -24,7 +25,10 @@
       "applicability": {
         "loan_types": [],
         "borrower_types": [],
-        "lender_classes": ["nbfc", "nbfc_mfi"],
+        "lender_classes": [
+          "nbfc",
+          "nbfc_mfi"
+        ],
         "purposes": [],
         "effective_from": "2012-07-02",
         "effective_to": null
@@ -40,7 +44,9 @@
         "lending against gold jewellery"
       ],
       "source_url": null,
-      "notes": "Consolidates instructions as at June 30, 2012 and supersedes CC No.232 dated July 01, 2011. NBFC-specific: it does NOT bind banks. Parts have since been restated in later Master Directions, so answers grounded only in this document should be treated as weaker evidence than the 2023-2025 circulars for any overlapping topic."
+      "notes": "Consolidates instructions as at June 30, 2012 and supersedes CC No.232 dated July 01, 2011. NBFC-specific: it does NOT bind banks. RECOMMENDED REPLACEMENT: the NBFC Fair Practices Code has since been restated in later Master Directions, so grounding a compliance claim in this 2012 text risks citing a rule that has moved. Kept in the corpus for coverage, but any answer resting solely on it should be treated as weaker evidence than the 2023-2025 circulars.",
+      "source_url_verified": false,
+      "source_url_status": "Not resolved. This 2012 Master Circular is superseded and no longer listed in RBI's current master-circular index; the pages that surface under this title today are the 2011-12 predecessor it replaced (RBI/2011-12/26) and the later 2015-16 edition (RBI/2015-16/16). No URL is recorded rather than one that is close but wrong. See notes: this document should be replaced in the corpus."
     },
     {
       "id": "rbi-2023-24-53-penal-charges",
@@ -83,8 +89,20 @@
         "disclosure of penal charges in loan agreement and KFS",
         "communication of penal charges to borrower"
       ],
-      "source_url": null,
-      "notes": "Issued 2023-08-18 but 'These instructions shall come into effect from January 1, 2024.' For existing loans the switchover applied from the next review/renewal on or after 2024-04-01, and not later than 2024-06-30."
+      "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12527&Mode=0",
+      "notes": "Issued 2023-08-18 but 'These instructions shall come into effect from January 1, 2024.' For existing loans the switchover applied from the next review/renewal on or after 2024-04-01, and not later than 2024-06-30.",
+      "source_url_verified": true,
+      "related": [
+        {
+          "title": "Fair Lending Practice - Penal Charges in Loan Accounts: Extension of Timeline for Implementation of Instructions",
+          "rbi_reference": "RBI/2023-24/102",
+          "circular_number": "DoR.MCS.REC.61/01.01.001/2023-24",
+          "issued_on": "2023-12-29",
+          "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12585&Mode=0",
+          "source_url_verified": true,
+          "note": "Not in this corpus. Named here because the file penal_charges_extension_2023.pdf is misleadingly named after it."
+        }
+      ]
     },
     {
       "id": "rbi-2023-24-55-floating-rate-reset",
@@ -103,8 +121,15 @@
         "Non-Banking Financial Companies (including Housing Finance Companies)"
       ],
       "applicability": {
-        "loan_types": ["personal", "home", "vehicle", "education"],
-        "borrower_types": ["individual"],
+        "loan_types": [
+          "personal",
+          "home",
+          "vehicle",
+          "education"
+        ],
+        "borrower_types": [
+          "individual"
+        ],
         "lender_classes": [
           "scheduled_commercial_bank",
           "regional_rural_bank",
@@ -124,8 +149,9 @@
         "prepayment or foreclosure at any point during the tenor",
         "quarterly statement of principal and interest recovered"
       ],
-      "source_url": "https://rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12030",
-      "notes": "PDF is the version 'Updated as on October 1, 2025'. Compliance deadline in the text: 'REs shall ensure that the above instructions are extended to the existing as well as new loans suitably by December 31, 2023', which is why effective_from is 2023-12-31 rather than the issue date. 'Personal loans' follows the RBI retail definition, hence the loan_types list covering housing, vehicle and education alongside consumer credit. source_url is the one self-referential rbi.org.in link embedded in the PDF."
+      "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12529&Mode=0",
+      "notes": "PDF is the version 'Updated as on October 1, 2025'. Compliance deadline in the text: 'REs shall ensure that the above instructions are extended to the existing as well as new loans suitably by December 31, 2023', which is why effective_from is 2023-12-31 rather than the issue date. 'Personal loans' follows the RBI retail definition, hence the loan_types list covering housing, vehicle and education alongside consumer credit. source_url is the one self-referential rbi.org.in link embedded in the PDF.",
+      "source_url_verified": true
     },
     {
       "id": "rbi-2024-25-18-key-facts-statement",
@@ -153,7 +179,10 @@
           "nbfc",
           "housing_finance_company"
         ],
-        "purposes": ["retail", "msme"],
+        "purposes": [
+          "retail",
+          "msme"
+        ],
         "effective_from": "2024-10-01",
         "effective_to": null
       },
@@ -166,8 +195,9 @@
         "validity period of the KFS",
         "KFS in a language understood by the borrower"
       ],
-      "source_url": null,
-      "notes": "Binding for all new retail and MSME term loans sanctioned on or after 2024-10-01, including fresh loans to existing customers, which is the effective_from used here rather than the 2024-04-15 issue date. This circular is the regulatory basis for the KFS-vs-agreement audit in app/risk/kfs_diff.py."
+      "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12663&Mode=0",
+      "notes": "Binding for all new retail and MSME term loans sanctioned on or after 2024-10-01, including fresh loans to existing customers, which is the effective_from used here rather than the 2024-04-15 issue date. This circular is the regulatory basis for the KFS-vs-agreement audit in app/risk/kfs_diff.py.",
+      "source_url_verified": true
     },
     {
       "id": "rbi-2025-26-18-management-of-advances-ucb",
@@ -181,13 +211,17 @@
       "filename_mismatch": {
         "filename_implies": "Fair Lending Practice - Penal Charges in Loan Accounts: Extension of Timeline for Implementation (2023)",
         "actual_content": "Master Circular - Management of Advances - UCBs (RBI/2025-26/18, dated April 01, 2025)",
-        "action_taken": "Catalogued by its actual content. The file was NOT renamed. The genuine extension-of-timeline circular is DOR.MCS.REC.31/01.01.001/2023-24 dated 2023-12-29, which this Master Circular lists in its appendix but does not reproduce."
+        "action_taken": "Catalogued by its actual content. The file was NOT renamed. The genuine extension-of-timeline circular is DoR.MCS.REC.61/01.01.001/2023-24 (RBI/2023-24/102) dated 2023-12-29, recorded under the penal-charges entry's `related` field."
       },
-      "addressees": ["All Primary (Urban) Co-operative Banks"],
+      "addressees": [
+        "All Primary (Urban) Co-operative Banks"
+      ],
       "applicability": {
         "loan_types": [],
         "borrower_types": [],
-        "lender_classes": ["cooperative_bank"],
+        "lender_classes": [
+          "cooperative_bank"
+        ],
         "purposes": [],
         "effective_from": "2025-04-01",
         "effective_to": null
@@ -200,8 +234,9 @@
         "loans against gold and silver ornaments",
         "restructuring of advances"
       ],
-      "source_url": null,
-      "notes": "UCB-only. It restates the penal-charges and KFS requirements for Primary (Urban) Co-operative Banks, so lender_classes is deliberately narrow: surfacing these paragraphs for an NBFC or bank loan would be a false applicability match, which is precisely what the pre-rerank filter exists to prevent. Consolidates instructions issued up to 2025-03-31 and introduces no new instructions."
+      "source_url": "https://www.rbi.org.in/Scripts/BS_ViewMasterCirculars.aspx?Id=12827&Mode=0",
+      "notes": "UCB-only. It restates the penal-charges and KFS requirements for Primary (Urban) Co-operative Banks, so lender_classes is deliberately narrow: surfacing these paragraphs for an NBFC or bank loan would be a false applicability match, which is precisely what the pre-rerank filter exists to prevent. Consolidates instructions issued up to 2025-03-31 and introduces no new instructions.",
+      "source_url_verified": true
     },
     {
       "id": "rbi-2025-26-64-prepayment-charges-directions",
@@ -220,7 +255,10 @@
       ],
       "applicability": {
         "loan_types": [],
-        "borrower_types": ["individual", "business"],
+        "borrower_types": [
+          "individual",
+          "business"
+        ],
         "lender_classes": [
           "scheduled_commercial_bank",
           "small_finance_bank",
@@ -242,8 +280,9 @@
         "cash credit and overdraft facilities",
         "disclosure of pre-payment charges in the Key Facts Statement"
       ],
-      "source_url": null,
-      "notes": "The sharpest effective-date case in this corpus: 'These Directions shall be applicable to all loans and advances sanctioned or renewed on or after January 1, 2026.' A loan sanctioned before that date is not governed by it, so the as_of filter must exclude these passages for older agreements even though they are the most semantically similar match for any prepayment question. Obligations vary by lender tier (NBFC-UL vs NBFC-ML, UCB Tier 3 vs Tier 4) and by whether the purpose is business, which the clause-level chunks must preserve."
+      "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12878&Mode=0",
+      "notes": "The sharpest effective-date case in this corpus: 'These Directions shall be applicable to all loans and advances sanctioned or renewed on or after January 1, 2026.' A loan sanctioned before that date is not governed by it, so the as_of filter must exclude these passages for older agreements even though they are the most semantically similar match for any prepayment question. Obligations vary by lender tier (NBFC-UL vs NBFC-ML, UCB Tier 3 vs Tier 4) and by whether the purpose is business, which the clause-level chunks must preserve.",
+      "source_url_verified": true
     }
   ]
 }

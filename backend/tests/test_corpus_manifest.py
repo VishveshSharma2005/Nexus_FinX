@@ -81,3 +81,26 @@ def test_kfs_circular_binds_from_october_2024_not_its_april_issue_date(manifest)
     assert doc.issued_on == date(2024, 4, 15)
     assert doc.applicability.effective_from == date(2024, 10, 1)
     assert not doc.is_in_force_on(date(2024, 6, 1))
+
+
+def test_every_recorded_source_url_was_verified(manifest) -> None:
+    """Links are checked against the circular they claim to point at.
+
+    A judge clicking a citation through to the wrong circular is worse than a
+    citation with no link, so an unverified URL fails the build.
+    """
+    for doc in manifest.documents:
+        if doc.source_url:
+            assert doc.source_url_verified, f"{doc.id}: unverified source_url"
+            assert doc.source_url.startswith("https://"), f"{doc.id}: insecure source_url"
+
+
+def test_a_missing_source_url_explains_itself(manifest) -> None:
+    for doc in manifest.documents:
+        if not doc.source_url:
+            assert doc.source_url_status, f"{doc.id}: silent missing source_url"
+
+
+def test_most_of_the_corpus_is_clickable(manifest) -> None:
+    linked = [doc for doc in manifest.documents if doc.source_url]
+    assert len(linked) >= len(manifest.documents) - 1
