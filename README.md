@@ -6,7 +6,8 @@ Built for the Nexus Hackathon.
 
 <p align="center">
 
-🚀 Live Demo · 💻 GitHub
+[🚀 **Live Demo**](https://your-demo-link-here)   
+[💻 **GitHub Repository**](https://github.com/VishveshSharma2005/Nexus_FinX)
 
 </p>
 
