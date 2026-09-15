@@ -7,8 +7,9 @@ versioned RBI corpus, quantifies the rupee impact, and compares offers honestly.
 FinX does five things, and nothing else: **explain, flag, quantify, compare, audit.**
 It is deliberately not a general "chat with a PDF".
 
-> **Status:** Phases 0-2 of 11 complete — interfaces, verified RBI corpus, two parsers, and a versioned index.
-> **No user interface yet.** Everything below runs from the command line; the browser UI is Phase 8.
+> **Status:** Phases 0-4 of 11 complete — cited chat works end to end in a browser.
+> Upload an agreement, ask a question, read a streamed answer with every claim
+> traceable to the clause it came from.
 > See [Build status](#build-status).
 
 ---
@@ -65,6 +66,21 @@ docker compose up --build
 ```
 
 API on `http://localhost:8000`, web on `http://localhost:3000`.
+
+### Run the demo (no Docker, no API key)
+
+```bash
+cp .env.example .env
+.\make.ps1 setup      # once: virtualenv + dependencies
+.\make.ps1 index      # once: RBI corpus into the index (~2 min, downloads the embedding model)
+
+.\make.ps1 dev        # terminal 1: API on :8000
+.\make.ps1 web        # terminal 2: UI on :3000
+```
+
+Open <http://localhost:3000>, upload `corpus/samples/home_loan_agreement_A.docx`,
+and ask *"Is there a lock-in period before I can prepay my loan?"* Upload
+`home_loan_agreement_A_v2.docx` and ask the same question to see the answer change.
 
 ### Option B — No Docker required
 
@@ -150,8 +166,8 @@ Vertical slices, tested at each gate.
 - [x] **Phase 0** — Scaffold, interfaces, docker-compose, booting API, RBI manifest
 - [x] **Phase 1** — Parsers (PDF + Word) → `ParsedDocument`, OCR fallback, contract test
 - [x] **Phase 2** — Clause chunking, content-hash versioning, amendment resolution, vector index
-- [ ] **Phase 3** — Hybrid retrieval + applicability filter
-- [ ] **Phase 4** — Cited chat (minimum viable demo)
+- [x] **Phase 3** — Hybrid retrieval + applicability filter, 10/10 on the goldset
+- [x] **Phase 4** — Cited chat, streamed, clickable in a browser
 - [ ] **Phase 5** — Evidence gate + fallback path
 - [ ] **Phase 6** — Risk & cost engine
 - [ ] **Phase 7** — KFS-vs-agreement audit + offer comparison

@@ -1,18 +1,253 @@
-@import "tailwindcss";
+/*
+ * Plain CSS, no build step.
+ *
+ * This started on Tailwind v4, whose native Windows scanner binary refused to
+ * match its own PostCSS plugin and left the page returning 500 with no route
+ * to a fix that did not involve the toolchain. For a one-screen interface the
+ * framework was buying very little, and a demo that cannot start because of a
+ * CSS compiler is a worse trade than writing eighty lines by hand.
+ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #0a0a0a;
+  --bg: #fbfbfa;
+  --fg: #16161a;
+  --muted: #6b6b76;
+  --line: #e2e2dd;
+  --panel: #ffffff;
+  --accent: #16161a;
+  --accent-fg: #ffffff;
+  --warn-bg: #fff8e6;
+  --warn-line: #e8c96a;
+  --err-bg: #fdecec;
+  --err-line: #e2a0a0;
+  --doc: #1f5f4a;
+  --rbi: #6b3fa0;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #101013;
+    --fg: #ededf0;
+    --muted: #9a9aa5;
+    --line: #2a2a31;
+    --panel: #17171c;
+    --accent: #ededf0;
+    --accent-fg: #101013;
+    --warn-bg: #2b2413;
+    --warn-line: #6b5a23;
+    --err-bg: #2c1618;
+    --err-line: #7a3b3f;
+    --doc: #6ed3ac;
+    --rbi: #c0a2f0;
   }
 }
 
+* {
+  box-sizing: border-box;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 15px/1.55 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.wrap {
+  max-width: 1040px;
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+h1 {
+  margin: 0;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+}
+
+.sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+button {
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  border: 0;
+  border-radius: 8px;
+  padding: 9px 16px;
+  background: var(--accent);
+  color: var(--accent-fg);
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+button.ghost {
+  background: transparent;
+  color: var(--fg);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 400;
+  text-align: left;
+}
+
+input[type="text"] {
+  font: inherit;
+  font-size: 14px;
+  flex: 1;
+  min-width: 240px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--fg);
+}
+
+.hidden {
+  display: none;
+}
+
+.meta {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 4px 0 0;
+}
+
+.answer-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr 320px;
+  margin-top: 12px;
+}
+
+@media (max-width: 800px) {
+  .answer-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.answer {
+  white-space: pre-wrap;
+  font-size: 14px;
+}
+
+.sources h3 {
+  margin: 0 0 8px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.cite {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--doc);
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+
+.cite.rbi {
+  border-left-color: var(--rbi);
+}
+
+.cite b {
+  display: block;
+}
+
+.cite .where {
+  color: var(--muted);
+}
+
+.cite details {
+  margin-top: 4px;
+}
+
+.cite summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+.cite p {
+  margin: 6px 0 0;
+  white-space: pre-wrap;
+}
+
+.cite a {
+  color: inherit;
+  display: inline-block;
+  margin-top: 6px;
+}
+
+.note {
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  margin-top: 12px;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-line);
+}
+
+.error {
+  background: var(--err-bg);
+  border: 1px solid var(--err-line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+details.warnings {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+details.warnings summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+
+details.warnings ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: var(--muted);
+}
+
+.suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.q {
+  margin: 0;
+  font-weight: 600;
+  font-size: 14px;
 }

@@ -10,9 +10,13 @@ implementations land in their own phases.
 
 from __future__ import annotations
 
+import logging
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from app.config import Settings, get_settings
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:  # pragma: no cover - import-time only for type checkers
     from app.core.contracts import DocumentParser, EmbeddingProvider, LLMProvider, VectorIndex
@@ -38,9 +42,33 @@ def get_parser_for(source, settings: Settings | None = None) -> DocumentParser:
 
 
 def get_llm_provider(settings: Settings | None = None) -> LLMProvider:
-    """Resolve the configured model provider. Implemented in Phase 4."""
+    """Resolve the configured model provider.
+
+    Falls back to the extractive provider when the hosted one is selected
+    without a key. A demo that dies on a missing environment variable is worse
+    than one that says which provider it is using, which /readyz reports.
+    """
+    from app.config import LLMProviderName
+    from app.providers.llm import ExtractiveProvider, NemotronProvider
+
     settings = settings or get_settings()
-    raise NotImplementedError("Provider registry lands in Phase 4")
+
+    if settings.llm_provider is LLMProviderName.NEMOTRON:
+        if not settings.nvidia_api_key:
+            logger.warning(
+                "FINX_LLM_PROVIDER=nemotron but NVIDIA_API_KEY is empty; "
+                "using the extractive provider instead."
+            )
+            return ExtractiveProvider()
+        return NemotronProvider(
+            api_key=settings.nvidia_api_key,
+            model=settings.llm_model,
+            base_url=settings.llm_base_url,
+            temperature=settings.llm_temperature,
+            max_tokens=settings.llm_max_tokens,
+            timeout=settings.llm_timeout_seconds,
+        )
+    return ExtractiveProvider()
 
 
 def get_embedding_provider(settings: Settings | None = None) -> EmbeddingProvider:
@@ -70,6 +98,25 @@ def get_embedding_provider(settings: Settings | None = None) -> EmbeddingProvide
     )
 
 
+@lru_cache(maxsize=4)
+def _build_index(backend: str, location: str, dimension: int) -> VectorIndex:
+    """One index instance per configuration, held for the process's lifetime.
+
+    Opening a fresh SQLite connection on every request leaks handles and keeps
+    the database file locked, which on Windows means it cannot be deleted or
+    rebuilt while the API is running. Cached on the resolved values rather than
+    on the Settings object, which is not hashable.
+    """
+    from app.config import IndexBackend
+    from app.rag.index import LocalVectorIndex
+
+    if backend == IndexBackend.PGVECTOR.value:
+        from app.rag.pgvector_index import PgVectorIndex
+
+        return PgVectorIndex(location, dimension=dimension)
+    return LocalVectorIndex(location)
+
+
 def get_vector_index(settings: Settings | None = None) -> VectorIndex:
     """Resolve the configured index backend.
 
@@ -77,12 +124,11 @@ def get_vector_index(settings: Settings | None = None) -> VectorIndex:
     once and the choice is an environment variable.
     """
     from app.config import IndexBackend
-    from app.rag.index import LocalVectorIndex
 
     settings = settings or get_settings()
-
-    if settings.index is IndexBackend.PGVECTOR:
-        from app.rag.pgvector_index import PgVectorIndex
-
-        return PgVectorIndex(settings.database_url, dimension=settings.embedding_dim)
-    return LocalVectorIndex(settings.local_index_path)
+    location = (
+        settings.database_url
+        if settings.index is IndexBackend.PGVECTOR
+        else str(settings.local_index_path)
+    )
+    return _build_index(settings.index.value, location, settings.embedding_dim)

@@ -6,3 +6,16 @@ target-version = "py311"
 
 [lint]
 select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[lint.flake8-bugbear]
+# FastAPI's dependency-injection idiom *is* a call in an argument default, and
+# the framework requires it there. B008 exists for mutable defaults, which
+# these are not.
+extend-immutable-calls = [
+    "fastapi.Depends",
+    "fastapi.File",
+    "fastapi.Form",
+    "fastapi.Query",
+    "fastapi.Body",
+    "fastapi.Header",
+]

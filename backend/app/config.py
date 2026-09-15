@@ -24,7 +24,7 @@ class IndexBackend(StrEnum):
 
 class LLMProviderName(StrEnum):
     NEMOTRON = "nemotron"
-    FAKE = "fake"
+    EXTRACTIVE = "extractive"
 
 
 class EmbeddingProviderName(StrEnum):
@@ -55,7 +55,7 @@ class Settings(BaseSettings):
     local_index_path: Path = REPO_ROOT / "data" / "finx_local.sqlite3"
 
     # --- LLM ----------------------------------------------------------------
-    llm_provider: LLMProviderName = LLMProviderName.FAKE
+    llm_provider: LLMProviderName = LLMProviderName.EXTRACTIVE
     llm_model: str = "nvidia/llama-3.3-nemotron-super-49b-v1.5"
     llm_base_url: str = "https://integrate.api.nvidia.com/v1"
     llm_temperature: float = 0.2

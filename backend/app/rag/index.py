@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import logging
 import sqlite3
+import threading
 from collections.abc import Iterable
 from datetime import date
 from pathlib import Path
@@ -128,8 +129,13 @@ class LocalVectorIndex:
         self.path = Path(path)
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._model = model
-        self._connection = sqlite3.connect(self.path)
+        # The API serves a request on one thread and streams the response from
+        # another, so the connection has to outlive the thread that opened it.
+        # SQLite's own serialized threading mode makes that safe for reads; the
+        # lock below serialises writes, which it does not.
+        self._connection = sqlite3.connect(self.path, check_same_thread=False)
         self._connection.row_factory = sqlite3.Row
+        self._lock = threading.Lock()
         self._connection.executescript(_SCHEMA)
         self._connection.commit()
 
@@ -173,7 +179,7 @@ class LocalVectorIndex:
         """
         vectors = dict(zip((chunk.content_hash for chunk in chunks), embeddings, strict=False))
 
-        with self._connection:
+        with self._lock, self._connection:
             for content_hash, vector in vectors.items():
                 if vector is None:
                     continue
@@ -227,7 +233,7 @@ class LocalVectorIndex:
         new_id = f"{document_id}-v{version}-{row['clause_id'] or row['chunk_id']}"
         citation["chunk_id"] = new_id
 
-        with self._connection:
+        with self._lock, self._connection:
             self._connection.execute(
                 """
                 INSERT INTO chunks (chunk_id, content_hash, document_id, version, clause_id,
