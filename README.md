@@ -2,237 +2,140 @@
 
 **From 40 pages of fine print to one evidence-backed decision.**
 
-Millions of people sign loan agreements they cannot read. FinX reads a borrower's
-own loan documents, explains them in plain language, checks every clause against a
-versioned RBI corpus, and shows the source behind every sentence it produces.
+Built for the Nexus Hackathon.
 
-FinX does five things and nothing else: **explain, flag, quantify, compare, audit.**
-It is deliberately not a general "chat with a PDF".
+## The problem
 
-> **Status:** Phases 0–5 of 11 complete. Cited chat, evidence gate and fallback work end to
-> end in a browser. 184 tests passing. Runs with **no API key and no Docker**; add an NVIDIA
-> key for fluent answers from Nemotron.
+Millions of people sign loan agreements they never fully read — lock-ins, prepayment
+penalties, penal charges, and bundled insurance buried in the fine print, some of it
+non-compliant with current RBI rules. Calculators don't open the document. Generic AI
+chatbots answer fluently, including when they're wrong. For a loan, a confident wrong
+answer is worse than no answer.
 
----
+## What FinX does
 
-## Try it in five minutes
+Upload your real loan agreement (PDF or Word) and ask questions in plain English.
+FinX answers from your actual document — every sentence cited to a clause number, page,
+or RBI circular — and **refuses to answer** when it doesn't have a real source, instead
+of guessing.
 
-Needs Python 3.11+ and Node 20+. Nothing else — no API key, no database server.
+> **Status:** Phases 0–5 complete and working end to end in a browser. 184 tests
+> passing. Runs with no API key and no Docker; add an NVIDIA key for fluent answers.
+
+## Try it — 5 minutes
 
 ```bash
-git clone <this-repo>
-cd FinX_model
+git clone https://github.com/VishveshSharma2005/Nexus_FinX.git
+cd Nexus_FinX
 cp .env.example .env
 ```
 
-Optional: for fluent answers, put your own key in `.env` as `NVIDIA_API_KEY=nvapi-...` and
-set `FINX_LLM_PROVIDER=nemotron`. **Never commit `.env`** — it is gitignored. Without a key
-(or if NVIDIA is down) FinX falls back to quoting the clauses directly, with a visible notice.
-Check the key with `python scripts/check_llm.py`.
-
 ```powershell
 # Windows
-.\make.ps1 setup     # virtualenv + dependencies   (~1 min)
-.\make.ps1 index     # RBI corpus into the index   (~2 min, downloads a 130 MB embedding model once)
-.\make.ps1 dev       # terminal 1 — API on :8000
-.\make.ps1 web       # terminal 2 — web on :3000
+.\make.ps1 setup   # deps, ~1 min
+.\make.ps1 index   # builds the index, ~2 min
+.\make.ps1 dev     # terminal 1 — API :8000
+.\make.ps1 web     # terminal 2 — UI :3000
 ```
 
 ```bash
 # macOS / Linux
 make setup && make index
-make dev    # terminal 1
-make web    # terminal 2
+make dev   # terminal 1
+make web   # terminal 2
 ```
 
-Then open **<http://localhost:3000>** and:
+Open **http://localhost:3000**:
 
-1. **Upload** `corpus/samples/home_loan_agreement_A.docx` → *58 clauses parsed*.
-2. **Ask** "Is there a lock-in period before I can prepay my loan, and what would it
-   cost?" Sources appear first, then the answer streams in, citing clause 11.2
-   (12-month lock-in), 11.3 (3% charge) and the RBI 2025 Directions that prohibit
-   both for a loan like this one.
-3. **Upload** `home_loan_agreement_A_v2.docx` → *60 clauses, 85% of embeddings
-   reused*. Ask the same question. The answer changes to "…at any time and without
-   any lock-in period", and the deleted clause cannot appear.
+1. Upload `corpus/samples/home_loan_agreement_A.docx` → 58 clauses parsed.
+2. Ask *"Is there a lock-in period, and what would prepaying cost me?"* — cited
+   answer streams in, sourced to Clause 11.2, 11.3, and the RBI 2025 Directions.
+3. Upload `home_loan_agreement_A_v2.docx`, the revised loan, and ask again — the
+   lock-in was deleted in the revision, and the answer correctly reflects that.
+4. Ask something with no real answer — *"Can I pay my EMI in cryptocurrency?"* —
+   and get an honest fallback: no-source notice, general explanation, human adviser.
 
----
+Optional, for fluent generation instead of the built-in quoting mode:
+```
+NVIDIA_API_KEY=nvapi-...
+FINX_LLM_PROVIDER=nemotron
+```
+If the key is missing or NVIDIA is unreachable, FinX detects it and falls back
+automatically within 20 seconds — it never hangs or crashes.
 
-## The one design decision everything else follows from
-
-A wrong answer about someone's loan is worse than no answer. FinX is built so a
-confident answer is *structurally* impossible without a source behind it.
+## How it works
 
 ```
-LANE 1 — INGEST (once per document)
-  Documents → Parse → Chunk → Tag → Index
-
-LANE 2 — RETRIEVE (per question)
-  Question → Retrieve → Filter (applicability) → gate: "enough evidence?"
-    ├─ yes → Lane 3
-    └─ no  → FALLBACK
-
-LANE 3 — RESPOND
-  Risk & Cost Engine → Explain → Cited Answer (page, clause, RBI circular)
+INGEST    Upload → Parse → Clause-split → Fingerprint → Embed → Index
+RETRIEVE  Question → Hybrid search → Filter by applicability → Evidence gate
+RESPOND   Generate from cited sources only → Verify every sentence → Stream
 ```
 
-| Rule | How it is enforced |
-|---|---|
-| **Parsers are swappable** | `DocumentParser` is a Protocol with two implementations (PDF, Word). An AST-walking test fails the build if anything outside `app/parsers/` imports a concrete one. |
-| **Models are swappable** | `LLMProvider` is a Protocol; `app/rag/` never imports a vendor SDK, asserted by test. Model choice is one environment variable. |
-| **The model never computes money** | All rupee maths is deterministic Python in `app/risk/` (Phase 6). The model only narrates figures Python produced. |
-| **Applicability, not just similarity** | Every RBI chunk carries loan type, borrower type, lender class and effective date. Non-governing passages are excluded *inside the index query*, so they are never scored, never reranked, and cannot reach the model. |
-| **Every sentence binds to a chunk** | `app/rag/verify.py` checks each sentence against the passage it cites and deletes what it cannot trace. |
+- **Swappable parsers and models.** `DocumentParser` and `LLMProvider` are
+  interfaces, not hardcoded choices — parser and model can change without
+  touching the rest of the system.
+- **Applicability, not just similarity.** Every RBI passage is tagged with the
+  loan type, lender class, and effective date it governs. A rule that doesn't
+  apply to *this* loan is excluded before it's ever scored — it can't reach an
+  answer.
+- **Every sentence is verified.** Each generated sentence, and every number in
+  it, is checked against its cited source before being shown. What fails is
+  removed.
 
----
+## What the engineering caught
 
-## What is worth looking at
+- **Corpus verified by content, not filename.** One RBI file was misnamed — it
+  was actually a co-operative-bank circular contributing 244 of 343 chunks to
+  the index, and would have surfaced UCB-only rules on an NBFC loan.
+- **Effective dates read from the text, not the header.** The 2025 Pre-payment
+  Directions apply only to loans sanctioned on/after 1 Jan 2026 — earlier loans
+  are correctly flagged as outside its coverage rather than misjudged by it.
+- **Amendments resolved as their own type.** A revised agreement that only
+  reprints changed clauses is handled explicitly — a clause is only "deleted"
+  if the amendment says so, never inferred from absence. Re-uploading a revision
+  reuses 85% of existing embeddings.
+- **Retrieval measured, not assumed.** Hybrid search beats semantic-only 10/10
+  vs 9/10 on a goldset built around the hardest cases, including two questions
+  the corpus genuinely can't answer.
+- **Citation verifier catches invented numbers** — e.g. an 18-month lock-in when
+  the clause says twelve — while correctly keeping faithful paraphrases.
 
-**Corpus integrity.** Every RBI circular is catalogued from its own text, never its
-filename. That caught a file named `penal_charges_extension_2023.pdf` that was in
-fact the UCB Master Circular on Management of Advances — co-operative-bank material
-governing no NBFC loan, contributing 244 of 343 corpus chunks. Every `source_url`
-was fetched and checked against the circular it claims to point at; one was wrong.
-See [`corpus/rbi/manifest.json`](corpus/rbi/manifest.json).
+## Tech stack
 
-**Dates are read, not assumed.** The penal-charges circular says it takes effect
-1 January 2024; a later circular moved that to 1 April 2024. The 2025 pre-payment
-Directions repeal eight earlier circulars, but only from 1 January 2026, and the
-repealed ones stay in force for loans before that. Taking a printed date at face
-value would have FinX judge a loan against rules that were not yet in force when it
-was signed.
+Python 3.11 / FastAPI · PyMuPDF + Tesseract OCR (PDF) · python-docx (Word) ·
+BGE-small embeddings, local via ONNX · SQLite + NumPy vector index · BM25 hybrid
+search · NVIDIA Nemotron (optional) · Next.js 15 + React 19 + TypeScript ·
+pytest, 184 passing tests
 
-**Amendments are a distinct document kind.** The sample v2 reprints 15 clauses and
-carries about 45 forward. Reading it as a restatement would delete the borrower's
-security, insurance and default clauses; reading a restatement as an amendment
-would leave a removed lock-in apparently in force. Deletion is only ever read from
-the amendment's own words, never inferred from absence.
-See [`versioning.py`](backend/app/rag/versioning.py).
+## What's built vs next
 
-**Re-uploading a revision is cheap.** Clauses are content-hashed, embeddings are
-keyed by hash, and chunks point at them — so v2 embeds 9 clauses and reuses 51.
-"What changed between versions" is a set operation costing zero tokens.
+**Built:** document parsing (PDF + Word, OCR fallback), verified applicability-
+tagged RBI corpus, clause-level versioning, hybrid retrieval with applicability
+filtering, evidence-gated cited chat, honest fallback path, live Nemotron
+integration with citation verification, working browser demo end to end.
 
-**Retrieval is measured, not asserted.** Ten goldset cases chosen for what they
-stress, including the same question asked against two versions with different
-correct answers, and two questions the corpus genuinely cannot answer.
-
-```
-$ python backend/tests/eval/run_eval.py --compare
-dense-only  9/10   ->   hybrid  10/10
-clause recall 100% | circular found 8/8 | refusals 2/2
-```
-
----
-
-## Commands
-
-| `make` | `.\make.ps1` | Does |
-|---|---|---|
-| `setup` | `setup` | Create `.venv`, install backend dependencies |
-| `index` | `index` | Build the vector index from corpus + samples |
-| `dev` | `dev` | Run the API on :8000 |
-| `web` | `web` | Run the web UI on :3000 |
-| `test` | `test` | Run the backend test suite |
-| `lint` | `lint` | Ruff check + format check |
-| `parse FILE=<f>` | `parse <f>` | Parse one document to a clause table |
-| `search Q="…"` | `search "…"` | Query the index, printing scored and cited hits |
-
----
-
-## Configuration
-
-Everything resolves in [`config.py`](backend/app/config.py) and nowhere else, so
-changing a model or a database is an environment change, not a code change.
-`GET /readyz` reports what a running process **actually** resolved to.
-
-| Variable | Purpose |
-|---|---|
-| `FINX_INDEX` | `local` (SQLite + numpy, default) or `pgvector` |
-| `FINX_LLM_PROVIDER` | `extractive` (no key, default) or `nemotron` |
-| `FINX_LLM_MODEL` | Default `nvidia/nemotron-3-super-120b-a12b`; any live NIM chat model works |
-| `FINX_EMBEDDING_PROVIDER` | `local` (BGE-small on this machine, default), `fake`, or `nvidia` |
-| `NVIDIA_API_KEY` | Only needed for the hosted provider |
-
-The default embedder is a real sentence-embedding model run locally through ONNX:
-semantic, so *"can I close my loan early?"* reaches a clause about prepayment that
-never uses the word. A deterministic lexical fallback ships alongside it so the
-test suite runs on a machine that cannot download weights.
-
-The default LLM provider needs no key and is not a stub: it quotes the retrieved
-passages and cites them. It cannot paraphrase or infer, which makes it a weaker
-writer and a strictly safer one. Set `NVIDIA_API_KEY` for fluency.
-
----
-
-## Build status
-
-- [x] **Phase 0** — Scaffold, interfaces, docker-compose, RBI manifest
-- [x] **Phase 1** — Parsers (PDF + Word), OCR fallback, contract test
-- [x] **Phase 2** — Chunking, content-hash versioning, amendment resolution, vector index
-- [x] **Phase 3** — Hybrid retrieval + applicability filter, 10/10 on the goldset
-- [x] **Phase 4** — Cited chat, streamed, clickable in a browser
-- [x] **Phase 5** — Evidence gate, no-source fallback, pre-2026 coverage-gap notice
-- [ ] **Phase 6** — Risk & cost engine
-- [ ] **Phase 7** — KFS-vs-agreement audit + offer comparison
-- [ ] **Phase 8** — Full frontend
-- [ ] **Phase 9** — Voice + Hindi/Gujarati
-- [ ] **Phase 10** — Evaluation at scale
-- [ ] **Phase 11** — Demo hardening
-
----
-
-## Repository layout
-
-```
-backend/app/core/contracts.py   Interfaces + shared schemas — the architectural spine
-backend/app/parsers/            PDF and Word parsers (imported nowhere else)
-backend/app/providers/          Embedding and LLM providers (imported nowhere else)
-backend/app/rag/                chunk, embed, index, retrieve, generate, verify, versioning
-backend/app/risk/               Money maths — deterministic, unit tested (Phase 6)
-backend/app/routers/            HTTP surface: upload, chat (SSE)
-backend/tests/eval/             Goldset + accuracy harness
-frontend/                       Next.js UI: upload + cited chat
-corpus/rbi/                     Public RBI circulars + applicability manifest
-corpus/samples/                 Demo loan documents (synthetic)
-```
-
----
-
-## Data handling
-
-No real borrower data. Every document in `corpus/samples/` is synthetic and says so
-on its face. Nothing is sent to a hosted model unless `NVIDIA_API_KEY` is set; the
-default configuration makes no outbound calls at query time.
-
----
+**Future scope:** deterministic risk/cost calculator, Key Facts Statement audit
+(automated agreement-vs-KFS mismatch detection), side-by-side loan comparison,
+fuller UI design pass, voice + Hindi/Gujarati support, cross-encoder reranker,
+larger-scale evaluation.
 
 ## Known limitations
 
-Stated rather than hidden, because a demo that hides them is a worse demo.
+- One retrieval ranking edge case: a question's own wording can currently
+  outrank a more relevant regulation in source *order* (not correctness) —
+  recorded in the goldset, fix is a reranker.
+- pgvector is implemented but untested (no Postgres available in dev); the
+  local SQLite index is the tested default.
+- One superseded RBI circular has no source link recorded, by design, rather
+  than a guessed one.
 
-- **Retrieval ranking on one question.** Asked whether prepayment charges are
-  *allowed*, retrieval ranks the floating-rate circular above the 2025 Directions,
-  because the question says "floating rate" and that circular is named after it.
-  The Directions still reach the model's context. A cross-encoder reranker is the
-  honest fix; the case is recorded in the goldset rather than tuned away.
-- **pgvector is unverified.** The implementation matches the same interface, but
-  its tests skip unless a Postgres is reachable and none has been.
-  `FINX_INDEX=local` is the tested path.
-- **One RBI source URL is unresolved.** The 2012 NBFC Fair Practices Code is
-  superseded and no longer in RBI's index. No URL is recorded rather than one that
-  is close but wrong.
-- **Word pagination is derived.** A `.docx` has no fixed pages, so page numbers come
-  from explicit page breaks and may differ from what Word displays. Clause numbers
-  are the reliable citation, and the parser says so.
+## Data handling
+
+All documents in `corpus/samples/` are synthetic and marked as such. RBI
+documents in `corpus/rbi/` are real public filings. No data leaves the machine
+unless `NVIDIA_API_KEY` is set.
 
 ---
 
-## Development notes
-
-- Backend targets Python 3.11.
-- The embedding model downloads once on the first `index` run and is cached in
-  `data/models/`. Behind a TLS-inspecting proxy it verifies against the OS trust
-  store rather than a bundled CA list.
-- OCR for scanned pages needs Tesseract. Without it the parser emits a warning
-  rather than silently returning empty text.
+*FinX provides source-backed decision support. It is not regulated financial or
+legal advice.*
