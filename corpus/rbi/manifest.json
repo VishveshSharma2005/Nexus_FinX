@@ -77,7 +77,7 @@
           "all_india_financial_institution"
         ],
         "purposes": [],
-        "effective_from": "2024-01-01",
+        "effective_from": "2024-04-01",
         "effective_to": null
       },
       "topics": [
@@ -90,19 +90,9 @@
         "communication of penal charges to borrower"
       ],
       "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12527&Mode=0",
-      "notes": "Issued 2023-08-18 but 'These instructions shall come into effect from January 1, 2024.' For existing loans the switchover applied from the next review/renewal on or after 2024-04-01, and not later than 2024-06-30.",
+      "notes": "Issued 2023-08-18. The circular itself said 'These instructions shall come into effect from January 1, 2024', but DoR.MCS.REC.61/01.01.001/2023-24 dated 2023-12-29 extended that by three months. effective_from is therefore 2024-04-01, the date fresh loans actually became subject to it; for existing loans the switchover ran to the next review/renewal on or after 2024-04-01 and no later than 2024-06-30. Taking the date printed in the circular at face value would have had FinX judge a loan against rules that were not yet in force.",
       "source_url_verified": true,
-      "related": [
-        {
-          "title": "Fair Lending Practice - Penal Charges in Loan Accounts: Extension of Timeline for Implementation of Instructions",
-          "rbi_reference": "RBI/2023-24/102",
-          "circular_number": "DoR.MCS.REC.61/01.01.001/2023-24",
-          "issued_on": "2023-12-29",
-          "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12585&Mode=0",
-          "source_url_verified": true,
-          "note": "Not in this corpus. Named here because the file penal_charges_extension_2023.pdf is misleadingly named after it."
-        }
-      ]
+      "amended_by": "rbi-2023-24-102-penal-charges-extension"
     },
     {
       "id": "rbi-2023-24-55-floating-rate-reset",
@@ -154,6 +144,50 @@
       "source_url_verified": true
     },
     {
+      "id": "rbi-2023-24-102-penal-charges-extension",
+      "file": "penal_charges_extension_2023.pdf",
+      "title": "Fair Lending Practice - Penal Charges in Loan Accounts: Extension of Timeline for Implementation of Instructions",
+      "rbi_reference": "RBI/2023-24/102",
+      "circular_number": "DoR.MCS.REC.61/01.01.001/2023-24",
+      "issued_on": "2023-12-29",
+      "document_kind": "rbi_circular",
+      "verified_from_pdf": true,
+      "addressees": [
+        "All Commercial Banks (including Small Finance Banks, Local Area Banks and Regional Rural Banks, excluding Payments Banks)",
+        "All Primary (Urban) Co-operative Banks",
+        "All NBFCs (including HFCs)",
+        "All India Financial Institutions (EXIM Bank, NABARD, NHB, SIDBI and NaBFID)"
+      ],
+      "applicability": {
+        "loan_types": [],
+        "borrower_types": [],
+        "lender_classes": [
+          "scheduled_commercial_bank",
+          "small_finance_bank",
+          "local_area_bank",
+          "regional_rural_bank",
+          "cooperative_bank",
+          "nbfc",
+          "housing_finance_company",
+          "all_india_financial_institution"
+        ],
+        "purposes": [],
+        "effective_from": "2023-12-29",
+        "effective_to": null
+      },
+      "topics": [
+        "extension of the penal charges implementation timeline",
+        "penal charges apply to fresh loans availed from 1 April 2024",
+        "existing loans switch over at the next review or renewal on or after 1 April 2024",
+        "switchover for existing loans not later than 30 June 2024"
+      ],
+      "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12585&Mode=0",
+      "source_url_verified": true,
+      "source_capture": "rbidocs.rbi.org.in serves its PDFs behind a bot-protection challenge, so this file was rendered locally from the verbatim text of the notification page at source_url rather than downloaded as RBI's own PDF. The wording is the circular's; the typesetting is not. Replace it with the official PDF when one can be fetched by hand.",
+      "amends": "rbi-2023-24-53-penal-charges",
+      "notes": "Short and entirely operative: it moves the penal-charges compliance date. Replaced the file previously carrying this name, which was in fact the UCB Master Circular on Management of Advances (RBI/2025-26/18) -- 244 chunks of co-operative-bank material that governs no NBFC or bank loan."
+    },
+    {
       "id": "rbi-2024-25-18-key-facts-statement",
       "file": "kfs_loans_advances_2024.pdf",
       "title": "Key Facts Statement (KFS) for Loans & Advances",
@@ -197,45 +231,6 @@
       ],
       "source_url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12663&Mode=0",
       "notes": "Binding for all new retail and MSME term loans sanctioned on or after 2024-10-01, including fresh loans to existing customers, which is the effective_from used here rather than the 2024-04-15 issue date. This circular is the regulatory basis for the KFS-vs-agreement audit in app/risk/kfs_diff.py.",
-      "source_url_verified": true
-    },
-    {
-      "id": "rbi-2025-26-18-management-of-advances-ucb",
-      "file": "penal_charges_extension_2023.pdf",
-      "title": "Master Circular - Management of Advances - UCBs",
-      "rbi_reference": "RBI/2025-26/18",
-      "circular_number": "DOR.CRE.REC.No.13/07.10.002/2025-26",
-      "issued_on": "2025-04-01",
-      "document_kind": "rbi_circular",
-      "verified_from_pdf": true,
-      "filename_mismatch": {
-        "filename_implies": "Fair Lending Practice - Penal Charges in Loan Accounts: Extension of Timeline for Implementation (2023)",
-        "actual_content": "Master Circular - Management of Advances - UCBs (RBI/2025-26/18, dated April 01, 2025)",
-        "action_taken": "Catalogued by its actual content. The file was NOT renamed. The genuine extension-of-timeline circular is DoR.MCS.REC.61/01.01.001/2023-24 (RBI/2023-24/102) dated 2023-12-29, recorded under the penal-charges entry's `related` field."
-      },
-      "addressees": [
-        "All Primary (Urban) Co-operative Banks"
-      ],
-      "applicability": {
-        "loan_types": [],
-        "borrower_types": [],
-        "lender_classes": [
-          "cooperative_bank"
-        ],
-        "purposes": [],
-        "effective_from": "2025-04-01",
-        "effective_to": null
-      },
-      "topics": [
-        "penal charges for UCBs (paragraph 15)",
-        "Key Facts Statement for UCBs (Annex-1)",
-        "credit administration and end-use of funds",
-        "working capital assessment",
-        "loans against gold and silver ornaments",
-        "restructuring of advances"
-      ],
-      "source_url": "https://www.rbi.org.in/Scripts/BS_ViewMasterCirculars.aspx?Id=12827&Mode=0",
-      "notes": "UCB-only. It restates the penal-charges and KFS requirements for Primary (Urban) Co-operative Banks, so lender_classes is deliberately narrow: surfacing these paragraphs for an NBFC or bank loan would be a false applicability match, which is precisely what the pre-rerank filter exists to prevent. Consolidates instructions issued up to 2025-03-31 and introduces no new instructions.",
       "source_url_verified": true
     },
     {

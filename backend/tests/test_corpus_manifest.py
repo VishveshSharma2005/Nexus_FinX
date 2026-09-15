@@ -62,12 +62,36 @@ def test_prepayment_directions_do_not_govern_a_loan_sanctioned_before_2026(manif
     assert doc.is_in_force_on(date(2026, 1, 1))
 
 
-def test_ucb_master_circular_is_scoped_to_cooperative_banks_only(manifest) -> None:
-    """Catalogued by content, not by its misleading filename. If this widened,
-    UCB-only paragraphs would surface for NBFC and bank loans."""
-    doc = manifest.by_id("rbi-2025-26-18-management-of-advances-ucb")
-    assert doc.applicability.lender_classes == (LenderClass.COOPERATIVE_BANK,)
-    assert doc.filename_mismatch is not None
+def test_penal_charges_binds_from_the_extended_date_not_the_printed_one(manifest) -> None:
+    """The circular says January 1, 2024. A later circular moved it to April.
+
+    Taking the date printed on a circular at face value would have FinX judge a
+    loan against rules that were not yet in force on the day it was signed.
+    """
+    penal = manifest.by_id("rbi-2023-24-53-penal-charges")
+    assert penal.issued_on == date(2023, 8, 18)
+    assert penal.applicability.effective_from == date(2024, 4, 1)
+    assert not penal.is_in_force_on(date(2024, 2, 1))
+    assert penal.is_in_force_on(date(2024, 4, 1))
+
+    extension = manifest.by_id(penal.amended_by)
+    assert extension.amends == penal.id
+
+
+def test_a_locally_rendered_file_says_so(manifest) -> None:
+    """Provenance is recorded where a file is not the regulator's own PDF."""
+    for doc in manifest.documents:
+        path = CORPUS_DIR / doc.file
+        if path.stat().st_size < 20_000:
+            assert doc.source_capture, f"{doc.id} looks rendered but claims no provenance"
+
+
+def test_the_corpus_holds_no_document_that_governs_nothing(manifest) -> None:
+    """Regression: a UCB-only Master Circular sat in the corpus contributing
+    244 chunks of co-operative-bank material to a corpus used for NBFC and
+    bank loans. Retrieval filtered it out, but it was pure noise in the index."""
+    ids = {doc.id for doc in manifest.documents}
+    assert "rbi-2025-26-18-management-of-advances-ucb" not in ids
 
 
 def test_nbfc_fair_practices_code_does_not_bind_banks(manifest) -> None:

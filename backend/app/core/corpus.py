@@ -64,6 +64,12 @@ class CorpusDocument(BaseModel):
     source_url: str | None = None
     source_url_verified: bool = False
     source_url_status: str | None = None
+    source_capture: str | None = None
+    """How this file was obtained, when it is not RBI's own PDF binary."""
+    amends: str | None = None
+    """Id of the circular this one modifies."""
+    amended_by: str | None = None
+    """Id of a later circular that changes this one's terms or dates."""
     notes: str | None = None
     filename_mismatch: FilenameMismatch | None = None
     related: tuple[RelatedCircular, ...] = ()
