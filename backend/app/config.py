@@ -64,9 +64,11 @@ class Settings(BaseSettings):
     nvidia_api_key: str = Field(default="", alias="NVIDIA_API_KEY")
 
     # --- Embeddings ---------------------------------------------------------
-    embedding_provider: EmbeddingProviderName = EmbeddingProviderName.FAKE
-    embedding_model: str = "nvidia/nv-embedqa-e5-v5"
-    embedding_dim: int = 1024
+    embedding_provider: EmbeddingProviderName = EmbeddingProviderName.LOCAL
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_dim: int = 384
+    model_cache_dir: Path = REPO_ROOT / "data" / "models"
+    """Where locally-run model weights are kept, so a demo needs no network."""
 
     # --- Retrieval / evidence gate -----------------------------------------
     retrieval_top_k: int = 24

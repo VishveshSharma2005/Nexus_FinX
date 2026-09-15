@@ -18,6 +18,10 @@ psycopg[binary]==3.2.4
 pgvector==0.3.6
 numpy==2.2.2
 
+# --- Local embedding model (ONNX, no API key, no network at query time) ------
+fastembed==0.5.1
+truststore==0.10.4
+
 # --- HTTP (provider clients, corpus fetch) -----------------------------------
 httpx==0.28.1
 

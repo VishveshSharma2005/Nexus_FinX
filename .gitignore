@@ -37,3 +37,4 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/settings.json
+data/models/

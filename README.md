@@ -119,12 +119,20 @@ changing a model or a database is an environment change, not a code change.
 | `FINX_INDEX` | `pgvector` or `local` |
 | `FINX_LLM_PROVIDER` | `nemotron` or `fake` (deterministic, offline, used by tests) |
 | `FINX_LLM_MODEL` | The single knob for model choice |
-| `FINX_EMBEDDING_PROVIDER` | Embeddings are separable from generation, so retrieval can stay multilingual while generation routes by language |
+| `FINX_EMBEDDING_PROVIDER` | `local` (default: BGE-small run on this machine), `fake` (deterministic lexical, used by tests), or `nvidia`. Embeddings are separable from generation, so retrieval can stay multilingual while generation routes by language |
 | `FINX_EVIDENCE_MIN_SCORE`, `FINX_EVIDENCE_MIN_PASSAGES` | The evidence gate's thresholds |
 | `NVIDIA_API_KEY` | Only needed for the hosted provider |
 
-A `fake` provider ships for both LLM and embeddings, so the full pipeline, the
-test suite and the evaluation harness run with no API key and no network.
+The default embedder is a real sentence-embedding model (BAAI/bge-small-en-v1.5,
+~130 MB) run locally through ONNX: no API key, and no network once the weights
+are cached in `data/models/`. It is semantic, so "can I close my loan early?"
+reaches a clause about prepayment that never uses the word.
+
+A deterministic lexical fallback (`fake`) ships alongside it and needs no
+download, so the test suite and the evaluation harness run anywhere. It is not
+the default because it has no signal at all for questions that share no
+vocabulary with the clause, which would mean tuning retrieval while actually
+debugging the embedder.
 
 ---
 
@@ -178,3 +186,10 @@ corpus/samples/                 Synthetic demo agreements
   the OS certificate store instead of pip's bundled one. Verification stays on.
 - OCR (scanned pages) needs Tesseract. Without it the parser degrades explicitly
   and emits a warning rather than silently returning empty text.
+- The embedding model downloads once, on the first `index` run (~2 minutes
+  including the build). It is cached in `data/models/` and never fetched again.
+  Behind a TLS-inspecting proxy the download uses the OS trust store, as pip
+  does here.
+- `FINX_INDEX=local` is the tested path. The pgvector implementation exists and
+  matches the same interface, but its tests skip unless a Postgres is reachable,
+  so treat it as unverified until you have run them.

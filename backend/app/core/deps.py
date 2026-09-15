@@ -46,7 +46,11 @@ def get_llm_provider(settings: Settings | None = None) -> LLMProvider:
 def get_embedding_provider(settings: Settings | None = None) -> EmbeddingProvider:
     """Resolve the configured embedding provider."""
     from app.config import EmbeddingProviderName
-    from app.providers.embeddings import HashingEmbeddingProvider, NvidiaEmbeddingProvider
+    from app.providers.embeddings import (
+        HashingEmbeddingProvider,
+        LocalSemanticEmbeddingProvider,
+        NvidiaEmbeddingProvider,
+    )
 
     settings = settings or get_settings()
 
@@ -57,7 +61,13 @@ def get_embedding_provider(settings: Settings | None = None) -> EmbeddingProvide
             base_url=settings.llm_base_url,
             dimension=settings.embedding_dim,
         )
-    return HashingEmbeddingProvider()
+    if settings.embedding_provider is EmbeddingProviderName.FAKE:
+        return HashingEmbeddingProvider()
+    return LocalSemanticEmbeddingProvider(
+        model=settings.embedding_model,
+        cache_dir=settings.model_cache_dir,
+        dimension=settings.embedding_dim,
+    )
 
 
 def get_vector_index(settings: Settings | None = None) -> VectorIndex:

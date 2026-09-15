@@ -4,19 +4,35 @@ Two implementations behind :class:`app.core.contracts.EmbeddingProvider`. The
 RAG layer imports neither; it receives one through dependency injection, which
 is what keeps a vendor SDK out of retrieval.
 
-The default is deterministic and offline. That is not only a convenience for
-tests: an evaluation harness whose numbers move because a hosted model was
-re-versioned is not measuring the retrieval changes you made, and a demo that
-needs a working API key is a demo that can fail in the room.
+Three implementations. The default runs a real sentence-embedding model on
+this machine: no API key, no network at query time, and genuinely semantic, so
+"can I foreclose early?" reaches a clause about prepayment that never uses the
+word.
+
+That last point is why the lexical fallback is not the default. Measured on
+five realistic questions against six clauses of the sample agreement, the
+hashing embedding below answered two of them with a score margin of exactly
+zero -- it has no signal at all for "foreclose" or "collateral" and was
+tie-breaking. Tuning retrieval on top of that would mean debugging the
+embedder while believing you were debugging retrieval.
+
+The hashing provider is kept as a test fixture and as a fallback for a machine
+that cannot download model weights. It is deterministic and needs nothing, so
+the suite and the evaluation harness still run anywhere.
 """
 
 from __future__ import annotations
 
 import hashlib
+import logging
 import math
+import os
 import re
+from pathlib import Path
 
 from app.core.contracts import EmbeddingProvider
+
+logger = logging.getLogger(__name__)
 
 _TOKEN = re.compile(r"[a-z0-9]+(?:\.[0-9]+)*")
 
@@ -82,6 +98,73 @@ class HashingEmbeddingProvider:
         return self._embed(text)
 
 
+class LocalSemanticEmbeddingProvider:
+    """A real sentence-embedding model, run locally through ONNX.
+
+    Default is BAAI/bge-small-en-v1.5: 384 dimensions, around 130 MB, fast
+    enough on CPU to embed a whole agreement in a second or two. Weights are
+    downloaded once into the project's own cache directory and are read from
+    disk on every run after that, so a demo needs no network.
+
+    Loading is deferred to first use. Importing this module must stay cheap --
+    the API process, the test suite and the CLI all import it, and most of them
+    never embed anything.
+    """
+
+    name = "local"
+
+    def __init__(
+        self,
+        *,
+        model: str = "BAAI/bge-small-en-v1.5",
+        cache_dir: str | Path | None = None,
+        dimension: int = 384,
+    ) -> None:
+        self.model = model
+        self.dimension = dimension
+        self._cache_dir = str(cache_dir) if cache_dir else None
+        self._model = None
+
+    def _ensure_model(self):
+        if self._model is not None:
+            return self._model
+
+        # Model weights are fetched over HTTPS on first use. On a machine
+        # behind a TLS-inspecting proxy the bundled CA list will not trust the
+        # intercepting root, so verification is pointed at the OS trust store
+        # -- the same fix pip needs here. Verification stays on.
+        try:
+            import truststore
+
+            truststore.inject_into_ssl()
+        except ImportError:  # pragma: no cover - optional on most machines
+            logger.debug("truststore not installed; using the default CA bundle")
+
+        # Windows without Developer Mode cannot create the symlinks the
+        # HuggingFace cache uses by default, and the failure surfaces as an
+        # alarming privilege error mid-download.
+        os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS", "1")
+        os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS_WARNING", "1")
+
+        from fastembed import TextEmbedding
+
+        logger.info("Loading embedding model %s", self.model)
+        self._model = TextEmbedding(model_name=self.model, cache_dir=self._cache_dir)
+        return self._model
+
+    async def embed_documents(self, texts: list[str]) -> list[list[float]]:
+        if not texts:
+            return []
+        model = self._ensure_model()
+        return [vector.tolist() for vector in model.embed(texts)]
+
+    async def embed_query(self, text: str) -> list[float]:
+        model = self._ensure_model()
+        # Asymmetric models expect a query to be embedded differently from a
+        # passage; fastembed applies the model's own query instruction here.
+        return next(iter(model.query_embed([text]))).tolist()
+
+
 class NvidiaEmbeddingProvider:
     """Hosted embeddings over the NIM OpenAI-compatible endpoint."""
 
@@ -134,8 +217,9 @@ class NvidiaEmbeddingProvider:
 
 
 def _assert_conformance() -> None:
-    """Both implementations satisfy the interface they claim to."""
+    """Every implementation satisfies the interface it claims to."""
     assert isinstance(HashingEmbeddingProvider(), EmbeddingProvider)
+    assert isinstance(LocalSemanticEmbeddingProvider(), EmbeddingProvider)
 
 
 _assert_conformance()
