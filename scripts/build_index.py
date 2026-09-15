@@ -150,7 +150,9 @@ async def _search(index, embedder, args: argparse.Namespace) -> None:
         return
     for hit in hits:
         citation = hit.chunk.citation
-        where = f"clause {citation.clause_number}" if citation.clause_number else f"p{citation.page}"
+        where = (
+            f"clause {citation.clause_number}" if citation.clause_number else f"p{citation.page}"
+        )
         print(f"  {hit.score:.3f}  v{hit.chunk.version} {where:<16} {_one_line(hit.chunk.text)}")
 
 

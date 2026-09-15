@@ -26,7 +26,7 @@ def _reachable(url: str) -> bool:
 
         with psycopg.connect(_dsn(url), connect_timeout=2):
             return True
-    except Exception:  # noqa: BLE001 - any failure means "not available here"
+    except Exception:  # any failure to connect means the database is not available here
         return False
 
 
@@ -47,7 +47,7 @@ async def index():
     from app.rag.pgvector_index import PgVectorIndex
 
     store = PgVectorIndex(DATABASE_URL, dimension=512)
-    with store._connection.cursor() as cursor:  # noqa: SLF001 - test fixture teardown
+    with store._connection.cursor() as cursor:  # reaching in is fine for fixture teardown
         cursor.execute("TRUNCATE chunks, embeddings CASCADE")
     yield store
     store.close()

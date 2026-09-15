@@ -34,7 +34,7 @@ web:
 	cd frontend && npm run dev
 
 test:
-	$(PY) -m pytest backend/tests -q
+	PYTHONWARNINGS='ignore:builtin type Swig:DeprecationWarning,ignore:builtin type swig:DeprecationWarning' \n		$(PY) -m pytest backend/tests -q
 
 lint:
 	$(PY) -m ruff check backend

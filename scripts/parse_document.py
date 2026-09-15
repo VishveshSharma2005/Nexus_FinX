@@ -29,9 +29,7 @@ MEDIA_TYPES = {
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(
-        description="Parse a document into ParsedDocument JSON."
-    )
+    parser = argparse.ArgumentParser(description="Parse a document into ParsedDocument JSON.")
     parser.add_argument("path", type=Path)
     parser.add_argument("--out", type=Path, help="Write JSON here instead of stdout.")
     parser.add_argument("--version", type=int, default=1)
@@ -50,9 +48,7 @@ def main() -> int:
     source = ParseSource(
         content=args.path.read_bytes(),
         filename=args.path.name,
-        media_type=MEDIA_TYPES.get(
-            args.path.suffix.lower(), "application/octet-stream"
-        ),
+        media_type=MEDIA_TYPES.get(args.path.suffix.lower(), "application/octet-stream"),
         version=args.version,
     )
     try:

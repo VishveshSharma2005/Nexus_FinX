@@ -1,0 +1,8 @@
+# Root configuration, so files outside backend/ (scripts, tooling) are linted
+# and formatted on the same terms as the application. Ruff picks the nearest
+# config, and two configs that disagree produce churn every time either is run.
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]

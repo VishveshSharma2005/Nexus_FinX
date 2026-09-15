@@ -73,9 +73,7 @@ class Writer:
             height = self._estimate_height(text, size)
             if self.y + height > PAGE_HEIGHT - MARGIN:
                 self._new_page()
-            rect = fitz.Rect(
-                MARGIN, self.y, MARGIN + BODY_WIDTH, self.y + height + size
-            )
+            rect = fitz.Rect(MARGIN, self.y, MARGIN + BODY_WIDTH, self.y + height + size)
             overflow = self.page.insert_textbox(
                 rect, text, fontsize=size, fontname=spec["font"], align=0
             )
@@ -226,8 +224,7 @@ def agreement_blocks(*, version: int, agreement_date: str) -> list[tuple[str, st
         ),
         (
             "body",
-            "4.2 Documentation and stamping charges of Rs. 2,500 shall be payable by the "
-            "Borrower.",
+            "4.2 Documentation and stamping charges of Rs. 2,500 shall be payable by the Borrower.",
         ),
         (
             "body",
