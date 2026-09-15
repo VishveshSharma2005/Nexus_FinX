@@ -1,28 +1,81 @@
 # FinX — Loan Agreement Intelligence
 
-**From 40 pages of fine print to one evidence-backed decision.**
+### Turn 40 pages of loan fine print into one evidence-backed decision.
 
-Built for the Nexus Hackathon.
+**FinX** is an AI-powered loan agreement intelligence platform that lets users upload a real **PDF or Word loan agreement** and ask questions in plain English.
 
-## The problem
+Instead of giving fluent but potentially unreliable answers, FinX grounds every response in the **actual loan agreement and applicable RBI regulations** — with clause/page-level citations — and **refuses to guess when evidence is missing**.
 
-Millions of people sign loan agreements they never fully read — lock-ins, prepayment
-penalties, penal charges, and bundled insurance buried in the fine print, some of it
-non-compliant with current RBI rules. Calculators don't open the document. Generic AI
-chatbots answer fluently, including when they're wrong. For a loan, a confident wrong
-answer is worse than no answer.
+<p align="center">
 
-## What FinX does
+[🚀 **Live Demo**](https://your-demo-link-here)   
+[💻 **GitHub Repository**](https://github.com/VishveshSharma2005/Nexus_FinX)
 
-Upload your real loan agreement (PDF or Word) and ask questions in plain English.
-FinX answers from your actual document — every sentence cited to a clause number, page,
-or RBI circular — and **refuses to answer** when it doesn't have a real source, instead
-of guessing.
+</p>
 
-> **Status:** Phases 0–5 complete and working end to end in a browser. 184 tests
-> passing. Runs with no API key and no Docker; add an NVIDIA key for fluent answers.
+> **Built for the Nexus Hackathon**
+> **184 tests passing · End-to-end browser demo · No API key required**
 
-## Try it — 5 minutes
+---
+
+## 🎯 The Problem
+
+Loan agreements can contain dozens of pages of complex terms:
+
+* 🔒 Lock-in periods
+* 💰 Prepayment / foreclosure charges
+* ⚠️ Penal charges
+* 🛡️ Bundled insurance
+* 📜 Regulatory conditions
+
+Generic AI chatbots may answer confidently even when the document does not support the answer.
+
+**For financial decisions, a confident wrong answer is worse than no answer.**
+
+---
+
+## 💡 The FinX Approach
+
+FinX follows an **evidence-first architecture**:
+
+```text
+Upload Agreement
+       ↓
+Parse & Extract Clauses
+       ↓
+Hybrid Retrieval
+       ↓
+Applicability Filtering
+       ↓
+Evidence Gate
+       ↓
+Cited Answer
+       ↓
+Sentence & Number Verification
+```
+
+### What makes it different?
+
+**📄 Document-grounded**
+Answers are based on the user's actual agreement.
+
+**⚖️ RBI-aware**
+Relevant RBI rules are filtered by loan type, lender class and effective date.
+
+**🔎 Clause-level citations**
+Answers point back to specific clauses, pages or RBI sources.
+
+**🛑 Refuses to guess**
+If no reliable evidence exists, FinX provides an honest fallback instead of hallucinating.
+
+**✅ Citation verification**
+Generated sentences and numerical values are checked against their cited evidence before being displayed.
+
+---
+
+## 🚀 Try It Locally
+
+### 1. Clone
 
 ```bash
 git clone https://github.com/VishveshSharma2005/Nexus_FinX.git
@@ -30,112 +83,273 @@ cd Nexus_FinX
 cp .env.example .env
 ```
 
+### 2. Windows
+
 ```powershell
-# Windows
-.\make.ps1 setup   # deps, ~1 min
-.\make.ps1 index   # builds the index, ~2 min
-.\make.ps1 dev     # terminal 1 — API :8000
-.\make.ps1 web     # terminal 2 — UI :3000
+.\make.ps1 setup
+.\make.ps1 index
 ```
+
+Terminal 1:
+
+```powershell
+.\make.ps1 dev
+```
+
+Terminal 2:
+
+```powershell
+.\make.ps1 web
+```
+
+### 3. macOS / Linux
 
 ```bash
-# macOS / Linux
-make setup && make index
-make dev   # terminal 1
-make web   # terminal 2
+make setup
+make index
 ```
 
-Open **http://localhost:3000**:
+Terminal 1:
 
-1. Upload `corpus/samples/home_loan_agreement_A.docx` → 58 clauses parsed.
-2. Ask *"Is there a lock-in period, and what would prepaying cost me?"* — cited
-   answer streams in, sourced to Clause 11.2, 11.3, and the RBI 2025 Directions.
-3. Upload `home_loan_agreement_A_v2.docx`, the revised loan, and ask again — the
-   lock-in was deleted in the revision, and the answer correctly reflects that.
-4. Ask something with no real answer — *"Can I pay my EMI in cryptocurrency?"* —
-   and get an honest fallback: no-source notice, general explanation, human adviser.
-
-Optional, for fluent generation instead of the built-in quoting mode:
-```
-NVIDIA_API_KEY=nvapi-...
-FINX_LLM_PROVIDER=nemotron
-```
-If the key is missing or NVIDIA is unreachable, FinX detects it and falls back
-automatically within 20 seconds — it never hangs or crashes.
-
-## How it works
-
-```
-INGEST    Upload → Parse → Clause-split → Fingerprint → Embed → Index
-RETRIEVE  Question → Hybrid search → Filter by applicability → Evidence gate
-RESPOND   Generate from cited sources only → Verify every sentence → Stream
+```bash
+make dev
 ```
 
-- **Swappable parsers and models.** `DocumentParser` and `LLMProvider` are
-  interfaces, not hardcoded choices — parser and model can change without
-  touching the rest of the system.
-- **Applicability, not just similarity.** Every RBI passage is tagged with the
-  loan type, lender class, and effective date it governs. A rule that doesn't
-  apply to *this* loan is excluded before it's ever scored — it can't reach an
-  answer.
-- **Every sentence is verified.** Each generated sentence, and every number in
-  it, is checked against its cited source before being shown. What fails is
-  removed.
+Terminal 2:
 
-## What the engineering caught
+```bash
+make web
+```
 
-- **Corpus verified by content, not filename.** One RBI file was misnamed — it
-  was actually a co-operative-bank circular contributing 244 of 343 chunks to
-  the index, and would have surfaced UCB-only rules on an NBFC loan.
-- **Effective dates read from the text, not the header.** The 2025 Pre-payment
-  Directions apply only to loans sanctioned on/after 1 Jan 2026 — earlier loans
-  are correctly flagged as outside its coverage rather than misjudged by it.
-- **Amendments resolved as their own type.** A revised agreement that only
-  reprints changed clauses is handled explicitly — a clause is only "deleted"
-  if the amendment says so, never inferred from absence. Re-uploading a revision
-  reuses 85% of existing embeddings.
-- **Retrieval measured, not assumed.** Hybrid search beats semantic-only 10/10
-  vs 9/10 on a goldset built around the hardest cases, including two questions
-  the corpus genuinely can't answer.
-- **Citation verifier catches invented numbers** — e.g. an 18-month lock-in when
-  the clause says twelve — while correctly keeping faithful paraphrases.
+Then open:
 
-## Tech stack
-
-Python 3.11 / FastAPI · PyMuPDF + Tesseract OCR (PDF) · python-docx (Word) ·
-BGE-small embeddings, local via ONNX · SQLite + NumPy vector index · BM25 hybrid
-search · NVIDIA Nemotron (optional) · Next.js 15 + React 19 + TypeScript ·
-pytest, 184 passing tests
-
-## What's built vs next
-
-**Built:** document parsing (PDF + Word, OCR fallback), verified applicability-
-tagged RBI corpus, clause-level versioning, hybrid retrieval with applicability
-filtering, evidence-gated cited chat, honest fallback path, live Nemotron
-integration with citation verification, working browser demo end to end.
-
-**Future scope:** deterministic risk/cost calculator, Key Facts Statement audit
-(automated agreement-vs-KFS mismatch detection), side-by-side loan comparison,
-fuller UI design pass, voice + Hindi/Gujarati support, cross-encoder reranker,
-larger-scale evaluation.
-
-## Known limitations
-
-- One retrieval ranking edge case: a question's own wording can currently
-  outrank a more relevant regulation in source *order* (not correctness) —
-  recorded in the goldset, fix is a reranker.
-- pgvector is implemented but untested (no Postgres available in dev); the
-  local SQLite index is the tested default.
-- One superseded RBI circular has no source link recorded, by design, rather
-  than a guessed one.
-
-## Data handling
-
-All documents in `corpus/samples/` are synthetic and marked as such. RBI
-documents in `corpus/rbi/` are real public filings. No data leaves the machine
-unless `NVIDIA_API_KEY` is set.
+**http://localhost:3000**
 
 ---
 
-*FinX provides source-backed decision support. It is not regulated financial or
-legal advice.*
+## 🧪 Quick Demo
+
+Upload:
+
+```text
+corpus/samples/home_loan_agreement_A.docx
+```
+
+Ask:
+
+> **"Is there a lock-in period, and what would prepaying cost me?"**
+
+FinX retrieves the relevant clauses and RBI guidance and returns a cited answer.
+
+Then upload:
+
+```text
+home_loan_agreement_A_v2.docx
+```
+
+The revised agreement removes the lock-in provision, and FinX correctly reflects the updated version.
+
+### Honest fallback
+
+Ask:
+
+> **"Can I pay my EMI in cryptocurrency?"**
+
+If the corpus contains no reliable answer, FinX does **not invent one**.
+
+Instead, it provides:
+
+```text
+No reliable source found
+        ↓
+General explanation
+        ↓
+Human adviser recommended
+```
+
+---
+
+## 🧠 Key Engineering Highlights
+
+### Applicability-Aware Retrieval
+
+RBI rules are not simply retrieved based on semantic similarity.
+
+Each regulatory passage is tagged with:
+
+* Loan type
+* Lender class
+* Effective date
+
+Rules that do not apply to the current loan are filtered **before retrieval scoring**, reducing the chance of irrelevant regulations reaching the answer.
+
+### Evidence Verification
+
+FinX verifies:
+
+* Generated claims
+* Numerical values
+* Citation-to-source consistency
+
+For example, if a clause states **12 months** but the model generates **18 months**, the citation verifier catches the mismatch before the answer is shown.
+
+### Version-Aware Agreements
+
+Revised agreements are treated explicitly as amendments.
+
+A clause is not considered deleted merely because it disappears from a revised document — deletion must be supported by the amendment itself.
+
+Re-uploading a revision can reuse approximately **85% of existing embeddings**.
+
+### Corpus Validation
+
+The RBI corpus is validated by **document content rather than filenames**.
+
+This caught a mislabeled regulatory document that would otherwise have introduced inappropriate UCB-specific rules into an NBFC loan workflow.
+
+### Retrieval Evaluation
+
+A goldset was created around difficult cases, including questions the corpus genuinely cannot answer.
+
+```text
+Hybrid Search       10/10
+Semantic Search      9/10
+```
+
+---
+
+## 🏗️ Architecture
+
+```text
+                ┌──────────────────┐
+                │   Loan Agreement │
+                │     PDF / DOCX   │
+                └────────┬─────────┘
+                         ↓
+                ┌──────────────────┐
+                │ Parse + OCR      │
+                │ Clause Extraction│
+                └────────┬─────────┘
+                         ↓
+                ┌──────────────────┐
+                │ Hybrid Retrieval │
+                │ BM25 + Embeddings│
+                └────────┬─────────┘
+                         ↓
+                ┌──────────────────┐
+                │ Applicability    │
+                │ Filtering        │
+                └────────┬─────────┘
+                         ↓
+                ┌──────────────────┐
+                │ Evidence Gate    │
+                └────────┬─────────┘
+                         ↓
+                ┌──────────────────┐
+                │ LLM Generation   │
+                │ + Verification   │
+                └────────┬─────────┘
+                         ↓
+                ┌──────────────────┐
+                │ Cited Answer      │
+                └──────────────────┘
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer           | Technology                       |
+| --------------- | -------------------------------- |
+| Backend         | Python 3.11, FastAPI             |
+| PDF Processing  | PyMuPDF, Tesseract OCR           |
+| Word Processing | python-docx                      |
+| Embeddings      | BGE-small, ONNX                  |
+| Retrieval       | BM25 + Vector Search             |
+| Database        | SQLite + NumPy                   |
+| LLM             | NVIDIA Nemotron *(optional)*     |
+| Frontend        | Next.js 15, React 19, TypeScript |
+| Testing         | pytest                           |
+| Tests           | **184 passing**                  |
+
+---
+
+## 🔐 Privacy & Data Handling
+
+* Sample agreements are **synthetic**.
+* RBI documents are public filings.
+* Documents remain local by default.
+* No external LLM API is required for the built-in quoting mode.
+* Data leaves the machine only when an NVIDIA API key is configured.
+
+```text
+No NVIDIA API key
+       ↓
+Local processing
+       ↓
+No external LLM call
+```
+
+Optional Nemotron generation:
+
+```env
+NVIDIA_API_KEY=nvapi-...
+FINX_LLM_PROVIDER=nemotron
+```
+
+If NVIDIA is unavailable, FinX automatically falls back instead of hanging or crashing.
+
+---
+
+## 📊 Current Status
+
+### ✅ Built
+
+* PDF + Word document parsing
+* OCR fallback
+* Clause-level extraction
+* RBI corpus with applicability metadata
+* Agreement versioning
+* Hybrid retrieval
+* Applicability filtering
+* Evidence-gated answers
+* Citation verification
+* Honest no-source fallback
+* Nemotron integration
+* Browser-based end-to-end demo
+* **184 passing tests**
+
+### 🔮 Future Scope
+
+* Deterministic risk & cost calculator
+* Key Facts Statement (KFS) mismatch detection
+* Side-by-side loan comparison
+* Cross-encoder reranking
+* Larger-scale evaluation
+* Hindi / Gujarati support
+* Voice interface
+* Production-scale pgvector deployment
+
+---
+
+## ⚠️ Known Limitations
+
+* One retrieval-ranking edge case remains where question wording can appear before a more relevant regulation in source ordering.
+* pgvector implementation exists but the tested development environment currently uses SQLite.
+* One superseded RBI circular intentionally has no source link rather than using an unverified URL.
+
+---
+
+## 👥 Why FinX?
+
+FinX is designed around one principle:
+
+> **Don't just answer the question. Prove the answer.**
+
+For financial documents, **traceability, applicability and refusal to hallucinate** matter as much as language quality.
+
+---
+
+### ⚖️ Disclaimer
+
+FinX provides **source-backed decision support** and is not regulated financial or legal advice.
