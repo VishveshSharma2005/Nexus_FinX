@@ -7,8 +7,9 @@ versioned RBI corpus, and shows the source behind every sentence it produces.
 FinX does five things and nothing else: **explain, flag, quantify, compare, audit.**
 It is deliberately not a general "chat with a PDF".
 
-> **Status:** Phases 0–4 of 11 complete. Cited chat works end to end in a browser.
-> 142 tests passing. Runs with **no API key and no Docker**.
+> **Status:** Phases 0–5 of 11 complete. Cited chat, evidence gate and fallback work end to
+> end in a browser. 184 tests passing. Runs with **no API key and no Docker**; add an NVIDIA
+> key for fluent answers from Nemotron.
 
 ---
 
@@ -21,6 +22,11 @@ git clone <this-repo>
 cd FinX_model
 cp .env.example .env
 ```
+
+Optional: for fluent answers, put your own key in `.env` as `NVIDIA_API_KEY=nvapi-...` and
+set `FINX_LLM_PROVIDER=nemotron`. **Never commit `.env`** — it is gitignored. Without a key
+(or if NVIDIA is down) FinX falls back to quoting the clauses directly, with a visible notice.
+Check the key with `python scripts/check_llm.py`.
 
 ```powershell
 # Windows
@@ -142,6 +148,7 @@ changing a model or a database is an environment change, not a code change.
 |---|---|
 | `FINX_INDEX` | `local` (SQLite + numpy, default) or `pgvector` |
 | `FINX_LLM_PROVIDER` | `extractive` (no key, default) or `nemotron` |
+| `FINX_LLM_MODEL` | Default `nvidia/nemotron-3-super-120b-a12b`; any live NIM chat model works |
 | `FINX_EMBEDDING_PROVIDER` | `local` (BGE-small on this machine, default), `fake`, or `nvidia` |
 | `NVIDIA_API_KEY` | Only needed for the hosted provider |
 
@@ -163,7 +170,7 @@ writer and a strictly safer one. Set `NVIDIA_API_KEY` for fluency.
 - [x] **Phase 2** — Chunking, content-hash versioning, amendment resolution, vector index
 - [x] **Phase 3** — Hybrid retrieval + applicability filter, 10/10 on the goldset
 - [x] **Phase 4** — Cited chat, streamed, clickable in a browser
-- [ ] **Phase 5** — Evidence gate + fallback path
+- [x] **Phase 5** — Evidence gate, no-source fallback, pre-2026 coverage-gap notice
 - [ ] **Phase 6** — Risk & cost engine
 - [ ] **Phase 7** — KFS-vs-agreement audit + offer comparison
 - [ ] **Phase 8** — Full frontend

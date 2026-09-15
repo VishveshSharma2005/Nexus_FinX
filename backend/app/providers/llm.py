@@ -210,6 +210,9 @@ class NemotronProvider:
             "temperature": self._temperature if temperature is None else temperature,
             "max_tokens": self._max_tokens if max_tokens is None else max_tokens,
             "stream": stream,
+            # Nemotron 3.x reasoning models ignore /no_think and write their
+            # reasoning into the answer as plain text; this turns it off.
+            "chat_template_kwargs": {"enable_thinking": False},
         }
 
     def _client(self):
