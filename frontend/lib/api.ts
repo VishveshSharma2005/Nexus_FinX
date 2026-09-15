@@ -36,6 +36,22 @@ export type ChatMeta = {
   model: string;
 };
 
+export type Fallback = {
+  notice: string;
+  reason: string;
+  explanation: string;
+  advisor: string;
+  explanation_source: string;
+  filtered_out: number;
+};
+
+export type CoverageGap = {
+  superseded_by: string;
+  effective_from: string;
+  missing_circulars: string[];
+  message: string;
+};
+
 export type UploadResult = {
   document_id: string;
   version: number;
@@ -80,6 +96,10 @@ export type ChatHandlers = {
     stripped: string[];
     fully_grounded?: boolean;
   }) => void;
+  /** Below the evidence gate: no confident answer, and no citations follow. */
+  onFallback?: (fallback: Fallback) => void;
+  /** Above the gate, but the regulation that governed this loan is not held. */
+  onCoverage?: (gaps: CoverageGap[]) => void;
   onError?: (message: string) => void;
   onDone?: () => void;
 };
@@ -166,6 +186,12 @@ export async function askQuestion(
           handlers.onVerified?.(
             payload as { text: string; stripped: string[]; fully_grounded?: boolean },
           );
+          break;
+        case "fallback":
+          handlers.onFallback?.(payload as Fallback);
+          break;
+        case "coverage":
+          handlers.onCoverage?.(payload as CoverageGap[]);
           break;
         case "error":
           handlers.onError?.((payload as { message: string }).message);

@@ -77,7 +77,12 @@ class Settings(BaseSettings):
     # --- Retrieval / evidence gate -----------------------------------------
     retrieval_top_k: int = 24
     rerank_top_n: int = 8
-    evidence_min_score: float = 0.35
+    evidence_min_confidence: float = 0.72
+    """Raw cosine below which retrieval has not found enough to answer from.
+
+    Measured on the goldset with the default embedding model: answerable
+    questions 0.74-0.82, unanswerable 0.66-0.70. A property of the model, so
+    re-measure with run_eval.py if the embedder changes."""
     evidence_min_passages: int = 2
 
     # --- Parser -------------------------------------------------------------

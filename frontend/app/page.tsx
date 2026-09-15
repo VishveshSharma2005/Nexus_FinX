@@ -18,6 +18,8 @@ import {
   uploadDocument,
   type ChatMeta,
   type Citation,
+  type CoverageGap,
+  type Fallback,
   type UploadResult,
 } from "@/lib/api";
 
@@ -35,6 +37,8 @@ type Turn = {
   meta: ChatMeta | null;
   stripped: string[];
   degraded: string | null;
+  fallback: Fallback | null;
+  coverage: CoverageGap[];
   streaming: boolean;
   error: string | null;
 };
@@ -77,6 +81,8 @@ export default function Home() {
           meta: null,
           stripped: [],
           degraded: null,
+          fallback: null,
+          coverage: [],
           streaming: true,
           error: null,
         },
@@ -98,6 +104,8 @@ export default function Home() {
           ),
         // The hosted model failed: its partial draft is void, and the
         // fallback's answer streams into a cleared box under a notice.
+        onFallback: (fallback) => update({ fallback, streaming: false }),
+        onCoverage: (coverage) => update({ coverage }),
         onDegraded: ({ message }) => update({ degraded: message, answer: "" }),
         // Verification can only remove sentences, so the checked answer always
         // replaces the draft rather than adding to it.
@@ -231,7 +239,16 @@ export default function Home() {
             </p>
           )}
 
-          {turn.error ? (
+          {turn.fallback ? (
+            <div className="fallback">
+              <p className="fallback-notice">{turn.fallback.notice}</p>
+              <p className="fallback-reason">{turn.fallback.reason}</p>
+              <h4>In general terms</h4>
+              <p>{turn.fallback.explanation}</p>
+              <h4>For your specific loan</h4>
+              <p>{turn.fallback.advisor}</p>
+            </div>
+          ) : turn.error ? (
             <p className="error">
               {turn.error}
             </p>
@@ -239,6 +256,11 @@ export default function Home() {
             <div className="answer-grid">
               <div className="answer">
                 {turn.degraded && <p className="note">{turn.degraded}</p>}
+                {turn.coverage.map((gap) => (
+                  <p key={gap.superseded_by} className="coverage">
+                    {gap.message}
+                  </p>
+                ))}
                 {turn.answer || (turn.streaming ? "…" : "")}
                 {turn.stripped.length > 0 && (
                   <p className="note">

@@ -376,12 +376,27 @@ SAMPLES = {
         version=2, agreement_date="4 May 2026"
     ),
     "personal_loan_kfs.pdf": kfs_blocks,
+    # Sanctioned before 1 January 2026, so the 2025 pre-payment Directions do
+    # not govern it, and the earlier circulars that did are not in the corpus.
+    # Exists to exercise that coverage gap in the browser.
+    "personal_loan_agreement_2025.pdf": lambda: agreement_blocks(
+        version=1, agreement_date="18 November 2025"
+    ),
 }
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    """Write every sample, or only the ones named on the command line.
+
+    Rewriting a file that already exists changes its bytes -- the PDF carries a
+    creation timestamp -- and so its content-derived document id. Name only the
+    files you mean to regenerate.
+    """
+    wanted = set(argv or [])
     SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     for filename, builder in SAMPLES.items():
+        if wanted and filename not in wanted:
+            continue
         path = SAMPLES_DIR / filename
         build_pdf(path, builder())
         print(f"wrote {path.relative_to(REPO_ROOT)}  ({path.stat().st_size:,} bytes)")
@@ -389,4 +404,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv[1:]))

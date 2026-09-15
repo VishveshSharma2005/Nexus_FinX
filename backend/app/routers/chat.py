@@ -28,6 +28,9 @@ from app.core.corpus import load_manifest
 from app.core.deps import get_embedding_provider, get_llm_provider, get_vector_index
 from app.db.documents import DocumentStore
 from app.providers.llm import ExtractiveProvider
+from app.rag.coverage import find_gaps
+from app.rag.fallback import build_fallback
+from app.rag.gate import evaluate
 from app.rag.generate import generate_stream
 from app.rag.retrieve import build_topic_index, retrieve_for_answer
 from app.rag.verify import verify
@@ -37,17 +40,27 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
 
 _TOPIC_INDEX: dict[str, set[str]] | None = None
+_MANIFEST = None
+
+
+def manifest(settings: Settings):
+    """The RBI manifest, loaded once. None if it cannot be read."""
+    global _MANIFEST
+    if _MANIFEST is None:
+        try:
+            _MANIFEST = load_manifest(settings.rbi_corpus_dir)
+        except (FileNotFoundError, ValueError) as exc:
+            logger.warning("RBI manifest unavailable: %s", exc)
+            _MANIFEST = False
+    return _MANIFEST or None
 
 
 def topic_index(settings: Settings) -> dict[str, set[str]]:
     """Curated topics from the RBI manifest, loaded once."""
     global _TOPIC_INDEX
     if _TOPIC_INDEX is None:
-        try:
-            _TOPIC_INDEX = build_topic_index(load_manifest(settings.rbi_corpus_dir))
-        except (FileNotFoundError, ValueError) as exc:
-            logger.warning("RBI manifest unavailable, topic ranking disabled: %s", exc)
-            _TOPIC_INDEX = {}
+        loaded = manifest(settings)
+        _TOPIC_INDEX = build_topic_index(loaded) if loaded else {}
     return _TOPIC_INDEX
 
 
@@ -112,6 +125,8 @@ async def chat(
                 top_n=settings.rerank_top_n,
             )
 
+            decision = evaluate(retrieval, threshold=settings.evidence_min_confidence)
+
             yield _sse(
                 "meta",
                 {
@@ -119,26 +134,60 @@ async def chat(
                     "version": document.version,
                     "title": document.title,
                     "confidence": round(retrieval.confidence, 4),
+                    "threshold": decision.threshold,
+                    "gate": decision.outcome.value,
                     "considered": retrieval.considered,
                     "provider": provider.name,
                     "model": provider.model,
                 },
             )
 
-            if retrieval.is_empty:
+            # --- Below the gate: no confident answer -----------------------
+            # A separate path, and a short one. No citations, no risk engine,
+            # no document or RBI context sent to the model. Nothing streams,
+            # because a streamed draft would reach the screen before the claim
+            # filter had run over it.
+            if not decision.passed:
+                fallback_answer = await build_fallback(
+                    request.question,
+                    reason=decision.reason,
+                    provider=provider,
+                    use_model=provider.name != ExtractiveProvider.name,
+                )
                 yield _sse(
-                    "verified",
+                    "fallback",
                     {
-                        "text": (
-                            "Nothing in this document matched your question closely enough "
-                            "to answer from. Try naming a charge, a clause, or a term you "
-                            "saw in the agreement."
-                        ),
-                        "stripped": [],
+                        "notice": fallback_answer.notice,
+                        "reason": fallback_answer.reason,
+                        "explanation": fallback_answer.explanation,
+                        "advisor": fallback_answer.advisor,
+                        "explanation_source": fallback_answer.source,
+                        "filtered_out": len(fallback_answer.rejected),
                     },
                 )
                 yield _sse("done", {"grounded": False})
                 return
+
+            # --- Above the gate, but regulation of the time is not held ----
+            loaded = manifest(settings)
+            gaps = (
+                find_gaps(request.question, loan_date=document.as_of, manifest=loaded)
+                if loaded
+                else []
+            )
+            if gaps:
+                yield _sse(
+                    "coverage",
+                    [
+                        {
+                            "superseded_by": gap.superseded_by,
+                            "effective_from": gap.effective_from.isoformat(),
+                            "missing_circulars": list(gap.missing_circulars),
+                            "message": gap.message,
+                        }
+                        for gap in gaps
+                    ],
+                )
 
             citations = [
                 _citation_payload(passage, number)

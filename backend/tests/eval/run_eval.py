@@ -58,10 +58,9 @@ DEMO_AS_OF = date(2026, 1, 14)
 # What each circular declares itself to be about, from the manifest.
 TOPICS = build_topic_index(load_manifest(get_settings().rbi_corpus_dir))
 
-# Absolute cosine below which retrieval is saying it did not really find
-# anything. Measured on this goldset: answerable questions score 0.74-0.82,
-# unanswerable ones 0.66-0.70. Phase 5's gate reads the same signal.
-INSUFFICIENT_CONFIDENCE = 0.72
+# The evidence gate's own threshold, imported rather than restated so the
+# harness measures the gate the app actually runs.
+from app.rag.gate import MIN_CONFIDENCE as INSUFFICIENT_CONFIDENCE  # noqa: E402
 
 
 @dataclass

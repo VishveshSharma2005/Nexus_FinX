@@ -251,3 +251,39 @@ details.warnings ul {
   font-weight: 600;
   font-size: 14px;
 }
+
+/* Fallback: unmistakably not a cited answer. Restyled in the UI overhaul. */
+.fallback {
+  margin-top: 12px;
+  border: 1px solid #7a2e38;
+  border-left: 4px solid #7a2e38;
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 14px;
+}
+.fallback h4 {
+  margin: 12px 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+.fallback p {
+  margin: 0;
+}
+.fallback-notice {
+  font-weight: 600;
+  color: #7a2e38;
+}
+.fallback-reason {
+  margin-top: 4px !important;
+  font-size: 12px;
+  color: var(--muted);
+}
+.coverage {
+  border-left: 3px solid #a07c33;
+  background: rgba(160, 124, 51, 0.08);
+  padding: 8px 10px;
+  margin: 0 0 12px;
+  font-size: 13px;
+}

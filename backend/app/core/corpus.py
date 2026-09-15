@@ -61,6 +61,8 @@ class Repeal(BaseModel):
     effective_from: date
     circulars: tuple[str, ...] = ()
     note: str | None = None
+    subject_keywords: tuple[str, ...] = ()
+    """Phrases that mark a question as falling within what was repealed."""
 
 
 class CorpusDocument(BaseModel):
