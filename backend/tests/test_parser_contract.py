@@ -20,7 +20,7 @@ import pytest
 
 from app.config import Settings, get_settings
 from app.core.contracts import DocumentKind, DocumentParser, ParsedDocument, ParseSource
-from app.parsers.lite.text import normalise_for_hash
+from app.core.text import normalise_for_hash
 from app.parsers.registry import PARSERS, build_parser
 
 SAMPLES_DIR = get_settings().sample_corpus_dir

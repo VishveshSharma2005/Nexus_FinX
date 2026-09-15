@@ -30,7 +30,9 @@ from app.core.contracts import (
     ParseSource,
     ParseWarning,
 )
+from app.core.text import clean_extracted_text, content_hash, document_fingerprint
 from app.parsers.lite import detect
+from app.parsers.lite.amendment import detect_amendment
 from app.parsers.lite.ocr import MIN_TEXT_CHARS_PER_PAGE, OcrEngine
 from app.parsers.lite.segment import (
     Line,
@@ -38,7 +40,6 @@ from app.parsers.lite.segment import (
     segment,
     strip_running_headers,
 )
-from app.parsers.lite.text import clean_extracted_text, content_hash, document_fingerprint
 
 logger = logging.getLogger(__name__)
 
@@ -195,11 +196,12 @@ class LiteParser:
 
         full_text = "\n".join(clause.text for clause in clauses)
         kind = detect.detect_kind(full_text, hint=source.kind_hint)
+        amends = self._amendment(full_text, kind, warnings)
 
         return ParsedDocument(
             document_id=document_id,
             version=source.version,
-            kind=kind,
+            kind=DocumentKind.AMENDMENT if amends else kind,
             title=self._title(document_id, source, clauses),
             page_count=page_count,
             clauses=clauses,
@@ -207,6 +209,7 @@ class LiteParser:
             parser_name=self.name,
             warnings=tuple(warnings),
             parsed_at=datetime.now(UTC),
+            amends=amends,
         )
 
     # -- internals ---------------------------------------------------------
@@ -308,6 +311,32 @@ class LiteParser:
             language=hint.language if hint else "en",
             extra=dict(hint.extra) if hint else {},
         )
+
+    @staticmethod
+    def _amendment(full_text, kind, warnings):
+        """Decide whether this document revises another rather than restating it.
+
+        An amendment is a loan agreement in every descriptive sense, so kind
+        detection calls it one. What makes it a distinct kind is structural:
+        the clauses it does not mention carry forward from the original
+        instead of being deleted.
+        """
+        if kind is not DocumentKind.LOAN_AGREEMENT:
+            return None
+        amends = detect_amendment(full_text)
+        if amends is None:
+            return None
+        warnings.append(
+            ParseWarning(
+                code="amendment_detected",
+                message=(
+                    "This document revises an earlier agreement rather than restating it, "
+                    "so clauses it does not mention remain in force from the original. "
+                    f"Identified by: {', '.join(amends.evidence)}."
+                ),
+            )
+        )
+        return amends
 
 
 __all__ = ["LiteParser", "SegmentationStrategy"]

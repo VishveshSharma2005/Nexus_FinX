@@ -44,12 +44,35 @@ def get_llm_provider(settings: Settings | None = None) -> LLMProvider:
 
 
 def get_embedding_provider(settings: Settings | None = None) -> EmbeddingProvider:
-    """Resolve the configured embedding provider. Implemented in Phase 2."""
+    """Resolve the configured embedding provider."""
+    from app.config import EmbeddingProviderName
+    from app.providers.embeddings import HashingEmbeddingProvider, NvidiaEmbeddingProvider
+
     settings = settings or get_settings()
-    raise NotImplementedError("Embedding registry lands in Phase 2")
+
+    if settings.embedding_provider is EmbeddingProviderName.NVIDIA:
+        return NvidiaEmbeddingProvider(
+            api_key=settings.nvidia_api_key,
+            model=settings.embedding_model,
+            base_url=settings.llm_base_url,
+            dimension=settings.embedding_dim,
+        )
+    return HashingEmbeddingProvider()
 
 
 def get_vector_index(settings: Settings | None = None) -> VectorIndex:
-    """Resolve pgvector or the local SQLite index. Implemented in Phase 2."""
+    """Resolve the configured index backend.
+
+    Both implementations satisfy the same interface, so retrieval is written
+    once and the choice is an environment variable.
+    """
+    from app.config import IndexBackend
+    from app.rag.index import LocalVectorIndex
+
     settings = settings or get_settings()
-    raise NotImplementedError("Index registry lands in Phase 2")
+
+    if settings.index is IndexBackend.PGVECTOR:
+        from app.rag.pgvector_index import PgVectorIndex
+
+        return PgVectorIndex(settings.database_url, dimension=settings.embedding_dim)
+    return LocalVectorIndex(settings.local_index_path)

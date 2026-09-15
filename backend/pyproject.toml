@@ -22,5 +22,7 @@ select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 "tests/*" = ["B018"]
 # These modules exist to normalise confusable characters, so the confusable
 # characters have to appear in them literally.
-"app/parsers/lite/text.py" = ["RUF001"]
+"app/core/text.py" = ["RUF001"]
+"app/core/amendment.py" = ["RUF001"]
+"app/parsers/lite/amendment.py" = ["RUF001"]
 "tests/test_segmentation.py" = ["RUF001"]

@@ -33,6 +33,12 @@ switch ($Target) {
     }
     "seed" { Require-Venv; & $Py scripts/seed_demo.py }
     "samples" { Require-Venv; & $Py scripts/make_sample_documents.py }
+    "index" { Require-Venv; & $Py scripts/build_index.py --reset }
+    "search" {
+        Require-Venv
+        if (-not $Arg) { throw 'Usage: .\make.ps1 search "lock-in period"' }
+        & $Py scripts/build_index.py --samples-only --search $Arg
+    }
     "parse" {
         Require-Venv
         if (-not $Arg) { throw "Usage: .\make.ps1 parse <path-to.pdf>" }
@@ -42,6 +48,6 @@ switch ($Target) {
     "compose-up" { docker compose up --build }
     "compose-down" { docker compose down -v }
     default {
-        Write-Host "Targets: setup, dev, web, test, lint, seed, samples, parse <pdf>, corpus, compose-up, compose-down"
+        Write-Host "Targets: setup, dev, web, test, lint, seed, samples, parse <file>, index, search <query>, corpus, compose-up, compose-down"
     }
 }

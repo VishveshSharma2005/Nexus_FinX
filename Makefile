@@ -6,7 +6,7 @@ ifeq ($(OS),)
 PY := .venv/bin/python
 endif
 
-.PHONY: help setup dev api web test lint seed samples parse corpus compose-up compose-down clean
+.PHONY: help setup dev api web test lint seed samples parse index search corpus compose-up compose-down clean
 
 help:
 	@echo "setup        Create .venv and install backend dependencies"
@@ -17,6 +17,8 @@ help:
 	@echo "seed         Build a demo-ready database (synthetic data only)"
 	@echo "samples      Generate the synthetic demo documents"
 	@echo "parse        Parse one document: make parse FILE=path/to.pdf"
+	@echo "index        Build the vector index from corpus + samples"
+	@echo "search       Query the index: make search Q=\"lock-in period\""
 	@echo "corpus       Fetch the public RBI corpus into corpus/rbi/"
 	@echo "compose-up   Full stack via Docker (postgres+pgvector, api, web)"
 
@@ -46,6 +48,12 @@ samples:
 
 parse:
 	$(PY) scripts/parse_document.py $(FILE) --summary
+
+index:
+	$(PY) scripts/build_index.py --reset
+
+search:
+	$(PY) scripts/build_index.py --samples-only --search "$(Q)"
 
 corpus:
 	$(PY) scripts/fetch_rbi_corpus.py

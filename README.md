@@ -7,7 +7,8 @@ versioned RBI corpus, quantifies the rupee impact, and compares offers honestly.
 FinX does five things, and nothing else: **explain, flag, quantify, compare, audit.**
 It is deliberately not a general "chat with a PDF".
 
-> **Status:** Phases 0-1 of 11 complete — interfaces, RBI corpus manifest, and a working parser.
+> **Status:** Phases 0-2 of 11 complete — interfaces, verified RBI corpus, two parsers, and a versioned index.
+> **No user interface yet.** Everything below runs from the command line; the browser UI is Phase 8.
 > See [Build status](#build-status).
 
 ---
@@ -100,7 +101,9 @@ curl http://localhost:8000/readyz   # shows which backends this process resolved
 | `test` | `test` | Run the backend test suite |
 | `lint` | `lint` | Ruff check + format check |
 | `samples` | `samples` | Generate the synthetic demo documents |
-| `parse FILE=<pdf>` | `parse <pdf>` | Parse one document to `ParsedDocument` JSON |
+| `parse FILE=<f>` | `parse <f>` | Parse one document to `ParsedDocument` JSON |
+| `index` | `index` | Build the vector index from corpus + samples |
+| `search Q="…"` | `search "…"` | Query the index and print scored, cited hits |
 | `corpus` | `corpus` | Fetch the public RBI corpus |
 | `seed` | `seed` | Build a demo-ready database (synthetic data only) |
 
@@ -137,8 +140,8 @@ guarantee is enforced in `scripts/seed_demo.py` in code, not by convention.
 Vertical slices, tested at each gate.
 
 - [x] **Phase 0** — Scaffold, interfaces, docker-compose, booting API, RBI manifest
-- [x] **Phase 1** — Parser: PDF → `ParsedDocument`, OCR fallback, contract test
-- [ ] **Phase 2** — Clause chunking with content-hash versioning + index
+- [x] **Phase 1** — Parsers (PDF + Word) → `ParsedDocument`, OCR fallback, contract test
+- [x] **Phase 2** — Clause chunking, content-hash versioning, amendment resolution, vector index
 - [ ] **Phase 3** — Hybrid retrieval + applicability filter
 - [ ] **Phase 4** — Cited chat (minimum viable demo)
 - [ ] **Phase 5** — Evidence gate + fallback path

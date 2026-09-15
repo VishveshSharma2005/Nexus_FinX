@@ -11,6 +11,7 @@ from __future__ import annotations
 from datetime import date
 
 from app.core.contracts import BorrowerType, DocumentKind, LenderClass, LoanType
+from app.core.text import clean_extracted_text, content_hash, normalise_for_hash
 from app.parsers.lite.detect import (
     detect_agreement_date,
     detect_borrower_type,
@@ -24,7 +25,6 @@ from app.parsers.lite.segment import (
     segment,
     strip_running_headers,
 )
-from app.parsers.lite.text import clean_extracted_text, content_hash, normalise_for_hash
 
 
 def lines(*texts: str, page: int = 1) -> list[Line]:

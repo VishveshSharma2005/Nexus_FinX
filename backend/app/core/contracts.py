@@ -66,6 +66,18 @@ class DocumentKind(StrEnum):
     LOAN_AGREEMENT = "loan_agreement"
     KEY_FACTS_STATEMENT = "key_facts_statement"
     SANCTION_LETTER = "sanction_letter"
+    AMENDMENT = "amendment"
+    """A revision that states only what changed and leaves the rest standing.
+
+    This is a distinct kind rather than just another version because it
+    inverts what a clause's *absence* means. In a full restatement, a clause
+    missing from v2 was deleted. In an amendment, a clause missing from v2 is
+    unchanged and still binding. Guessing wrong is severe in both directions:
+    read an amendment as a restatement and the borrower's security, insurance
+    and default clauses vanish from v2; read a restatement as an amendment and
+    a lock-in the lender actually removed still shows as in force.
+    """
+
     RBI_CIRCULAR = "rbi_circular"
     UNKNOWN = "unknown"
 
@@ -160,10 +172,40 @@ class ParseWarning(BaseModel):
     page: int | None = None
 
 
+class AmendmentTarget(BaseModel):
+    """What an amendment revises, as stated by the amendment itself.
+
+    Populated from the document's own text. ``base_document_id`` is usually
+    unknown at parse time -- the amendment names the original by loan account
+    number and date, not by any id this system assigned -- so linking the two
+    is the ingest layer's job, and these fields are the evidence it uses.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    base_document_id: str | None = None
+    base_version: int | None = None
+    loan_account_number: str | None = None
+    base_dated: date | None = None
+    effective_from: date | None = None
+    evidence: tuple[str, ...] = Field(
+        default=(),
+        description="Phrases in the document that identified it as an amendment.",
+    )
+
+
 class ParsedDocument(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     document_id: str
+    """Logical identity of the document, stable across its versions.
+
+    Defaults to a content-derived fingerprint, which keeps parsing
+    deterministic and reproducible. The ingest layer overrides it when it
+    recognises a document as a new version of one already held, so that
+    ``document_id`` plus ``version`` addresses a version of one loan rather
+    than an unrelated upload.
+    """
     version: int = Field(ge=1)
     kind: DocumentKind = DocumentKind.UNKNOWN
     title: str | None = None
@@ -173,6 +215,8 @@ class ParsedDocument(BaseModel):
     parser_name: str = ""
     warnings: tuple[ParseWarning, ...] = ()
     parsed_at: datetime | None = None
+    amends: AmendmentTarget | None = None
+    """Set when this document revises another rather than standing alone."""
 
 
 class ParseSource(BaseModel):
